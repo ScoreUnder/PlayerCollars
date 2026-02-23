@@ -118,13 +118,12 @@ public class InvisibleFenceBlock extends FenceBlock {
     @Environment(EnvType.CLIENT)
     public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
         super.randomDisplayTick(state, world, pos, random);
-        if (state.get(POWERED) && random.nextFloat() < 0.25 && !isLocalPlayerAPet(world))
+        if (state.get(POWERED) && random.nextFloat() < 0.25 && !isLocalPlayerAPet())
             ParticleUtil.spawnParticlesAround(world, pos, 1, 0.5, 0.5, true, DustParticleEffect.DEFAULT);
     }
 
     @Environment(EnvType.CLIENT)
-    private boolean isLocalPlayerAPet(World world) {
-        if (!world.isClient) return false;
+    private static boolean isLocalPlayerAPet() {
         var localPlayer = MinecraftClient.getInstance().player;
         return localPlayer != null && PlayerCollarsMod.isPet(localPlayer);
     }
