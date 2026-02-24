@@ -13,5 +13,8 @@
     "NameTagMixin",
     "PlayerEntityMixin",
     "ServerPlayerEntityMixin"
+  ],
+  "client": [
+    "ClientWorldMixin"
   ]
 }
