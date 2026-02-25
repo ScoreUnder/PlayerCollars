@@ -10,6 +10,7 @@ import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttribute;
+import net.minecraft.entity.player.PlayerAbilities;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
@@ -26,6 +27,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -37,6 +39,8 @@ public abstract class PlayerEntityMixin extends LivingEntity {
     @Shadow @Final PlayerInventory inventory;
 
     @Shadow @Nullable public abstract ItemEntity dropItem(ItemStack stack, boolean retainOwnership);
+
+    @Shadow public abstract PlayerAbilities getAbilities();
 
     protected PlayerEntityMixin(EntityType<? extends LivingEntity> entityType, World world) {
         super(entityType, world);
@@ -88,14 +92,14 @@ public abstract class PlayerEntityMixin extends LivingEntity {
         }
     }
 
-    @Redirect(method="updatePose", at= @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;setPose(Lnet/minecraft/entity/EntityPose;)V"))
-    private void playercollars$forceCrawl(PlayerEntity instance, EntityPose entityPose) {
-        if (!instance.getAbilities().flying && (entityPose == EntityPose.CROUCHING || entityPose == EntityPose.STANDING)) {
+    @ModifyArg(method="updatePose", at=@At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;setPose(Lnet/minecraft/entity/EntityPose;)V"))
+    private EntityPose playercollars$forceCrawl(EntityPose entityPose) {
+        if (!getAbilities().flying && (entityPose == EntityPose.CROUCHING || entityPose == EntityPose.STANDING)) {
             AccessoriesCapability cap = AccessoriesCapability.get(this);
             if (cap != null && !cap.getEquipped((x) -> x.isIn(PlayerCollarsMod.FOOT_PAWS_TAG)).isEmpty())
-                entityPose = EntityPose.SWIMMING;
+                return EntityPose.SWIMMING;
         }
-        instance.setPose(entityPose);
+        return entityPose;
     }
 
     @Inject(method = "getDisplayName", at = @At("HEAD"), cancellable = true)
