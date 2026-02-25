@@ -1,6 +1,5 @@
 package org.jlortiz.playercollars.item;
 
-import io.wispforest.accessories.api.AccessoriesCapability;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -43,8 +42,6 @@ public class PawSetupItem extends Item {
     @Environment(EnvType.CLIENT)
     public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
         if (!(entity instanceof PlayerEntity player) || !user.getWorld().isClient) return ActionResult.PASS;
-        AccessoriesCapability cap = AccessoriesCapability.get(player);
-        if (cap == null) return ActionResult.PASS;
 
         if (!PlayerCollarsMod.getOwnershipLevel(player, user).isOwned()) {
             user.sendMessage(Text.translatable("item.playercollars.paw_configurator.no_set_non_owner").formatted(Formatting.RED), true);

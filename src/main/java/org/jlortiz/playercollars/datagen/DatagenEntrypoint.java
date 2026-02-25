@@ -75,6 +75,8 @@ public class DatagenEntrypoint implements DataGeneratorEntrypoint {
             getOrCreateTagBuilder(PlayerCollarsMod.FOOT_PAWS_TAG).add(PlayerCollarsMod.FOOT_PAWS_ITEMS);
             getOrCreateTagBuilder(PlayerCollarsMod.COLLAR_TAG).add(PlayerCollarsMod.COLLAR_ITEM).add(PlayerCollarsMod.TAGLESS_COLLAR_ITEM)
                     .addOptionalTag(TagKey.of(RegistryKeys.ITEM, Identifier.of("petworks", "collars")));
+            getOrCreateTagBuilder(PlayerCollarsMod.OWNER_LOCKABLE_TAG).addTag(PlayerCollarsMod.COLLAR_TAG)
+                    .addTag(PlayerCollarsMod.PAWS_TAG).addTag(PlayerCollarsMod.FOOT_PAWS_TAG);
         }
     }
 

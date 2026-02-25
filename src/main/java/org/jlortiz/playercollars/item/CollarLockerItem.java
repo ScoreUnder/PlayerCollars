@@ -1,6 +1,5 @@
 package org.jlortiz.playercollars.item;
 
-import io.wispforest.accessories.api.AccessoriesCapability;
 import io.wispforest.accessories.api.slot.SlotEntryReference;
 import net.minecraft.component.EnchantmentEffectComponentTypes;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
@@ -36,8 +35,6 @@ public class CollarLockerItem extends Item {
     @Override
     public ActionResult useOnEntity(ItemStack stack, PlayerEntity user, LivingEntity entity, Hand hand) {
         if (!(entity instanceof PlayerEntity targetPlayer) || user.getWorld().isClient) return ActionResult.PASS;
-        AccessoriesCapability cap = AccessoriesCapability.get(targetPlayer);
-        if (cap == null) return ActionResult.PASS;
 
         ItemStack collarStack = PlayerCollarsMod.getOwnedCollar(targetPlayer, user);
         OwnershipLevel ownership = PlayerCollarsMod.getOwnershipLevel(targetPlayer, collarStack);
@@ -53,11 +50,7 @@ public class CollarLockerItem extends Item {
         RegistryEntry<Enchantment> binding = ((ServerPlayerEntity) user).getServerWorld().getRegistryManager()
                 .getOrThrow(RegistryKeys.ENCHANTMENT).getOrThrow(Enchantments.BINDING_CURSE);
         boolean shouldLock = !EnchantmentHelper.hasAnyEnchantmentsWith(collarStack, EnchantmentEffectComponentTypes.PREVENT_ARMOR_CHANGE);
-        List<SlotEntryReference> ls = cap.getEquipped(
-                (y) -> y.isIn(PlayerCollarsMod.COLLAR_TAG) ||
-                        y.isIn(PlayerCollarsMod.PAWS_TAG) ||
-                        y.isIn(PlayerCollarsMod.FOOT_PAWS_TAG)
-        );
+        List<SlotEntryReference> ls = PlayerCollarsMod.getEquippedAccessories(targetPlayer, PlayerCollarsMod.OWNER_LOCKABLE_TAG);
 
         for (SlotEntryReference p : ls) {
             ItemStack is = p.stack();

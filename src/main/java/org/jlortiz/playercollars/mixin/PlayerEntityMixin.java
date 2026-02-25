@@ -1,6 +1,5 @@
 package org.jlortiz.playercollars.mixin;
 
-import io.wispforest.accessories.api.AccessoriesCapability;
 import io.wispforest.accessories.api.slot.SlotEntryReference;
 import net.fabricmc.fabric.api.tag.convention.v2.TagUtil;
 import net.minecraft.block.BlockState;
@@ -49,9 +48,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
     @Redirect(method = "getBlockBreakingSpeed", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerInventory;getBlockBreakingSpeed(Lnet/minecraft/block/BlockState;)F"), require=0)
     private float getBlockBreakingSpeed(PlayerInventory instance, BlockState block) {
         float ret = instance.getBlockBreakingSpeed(block);
-        AccessoriesCapability cap = AccessoriesCapability.get(this);
-        if (cap == null) return ret;
-        List<SlotEntryReference> equippedPaws = cap.getEquipped((x) -> x.isIn(PlayerCollarsMod.PAWS_TAG));
+        List<SlotEntryReference> equippedPaws = PlayerCollarsMod.getEquippedAccessories(this, PlayerCollarsMod.PAWS_TAG);
         if (equippedPaws.isEmpty()) return ret;
         for (var paw : equippedPaws) {
             if (PawsItem.shouldPreventBlockInteraction(paw.stack(), block, true)) return 0;
@@ -65,9 +62,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
     @Redirect(method="attack", at= @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;getAttributeValue(Lnet/minecraft/registry/entry/RegistryEntry;)D", ordinal=0), require=0)
     private double getAttributeValue(PlayerEntity instance, RegistryEntry<EntityAttribute> registryEntry) {
         double ret = instance.getAttributeValue(registryEntry);
-        AccessoriesCapability cap = AccessoriesCapability.get(this);
-        if (cap == null) return ret;
-        if (cap.getEquipped((x) -> x.isIn(PlayerCollarsMod.PAWS_TAG)).isEmpty()) return ret;
+        if (PlayerCollarsMod.getEquippedAccessories(this, PlayerCollarsMod.PAWS_TAG).isEmpty()) return ret;
         return (ret - 1) * 0.75f + 1;
     }
 
@@ -78,9 +73,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
 
     @Inject(method = "tickMovement", at= @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerInventory;updateItems()V", shift = At.Shift.AFTER))
     private void playercollars$dropPawItems(CallbackInfo ci) {
-        AccessoriesCapability cap = AccessoriesCapability.get(this);
-        if (cap == null) return;
-        for (SlotEntryReference sr : cap.getEquipped((x) -> x.isIn(PlayerCollarsMod.PAWS_TAG))) {
+        for (SlotEntryReference sr : PlayerCollarsMod.getEquippedAccessories(this, PlayerCollarsMod.PAWS_TAG)) {
             if (PawsItem.shouldDrop(sr.stack(), inventory.getMainHandStack())) {
                 ItemStack stack = inventory.dropSelectedItem(true);
                 if (!stack.isEmpty()) dropItem(stack, true);
@@ -95,8 +88,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
     @ModifyArg(method="updatePose", at=@At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;setPose(Lnet/minecraft/entity/EntityPose;)V"))
     private EntityPose playercollars$forceCrawl(EntityPose entityPose) {
         if (!getAbilities().flying && (entityPose == EntityPose.CROUCHING || entityPose == EntityPose.STANDING)) {
-            AccessoriesCapability cap = AccessoriesCapability.get(this);
-            if (cap != null && !cap.getEquipped((x) -> x.isIn(PlayerCollarsMod.FOOT_PAWS_TAG)).isEmpty())
+            if (!PlayerCollarsMod.getEquippedAccessories(this, PlayerCollarsMod.FOOT_PAWS_TAG).isEmpty())
                 return EntityPose.SWIMMING;
         }
         return entityPose;

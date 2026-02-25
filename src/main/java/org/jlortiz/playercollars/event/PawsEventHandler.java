@@ -1,9 +1,6 @@
 package org.jlortiz.playercollars.event;
 
-import io.wispforest.accessories.api.AccessoriesCapability;
 import io.wispforest.accessories.api.slot.SlotEntryReference;
-import net.fabricmc.fabric.api.event.client.player.ClientPlayerBlockBreakEvents;
-import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.block.BlockState;
@@ -12,17 +9,13 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import org.jlortiz.playercollars.PlayerCollarsMod;
 import org.jlortiz.playercollars.item.PawsItem;
 
 public class PawsEventHandler {
     private static boolean shouldPawsBlock(LivingEntity player, BlockState block, boolean isBreak) {
-        AccessoriesCapability cap = AccessoriesCapability.get(player);
-        if (cap == null) return false;
-        for (SlotEntryReference sr : cap.getEquipped((x) -> x.isIn(PlayerCollarsMod.PAWS_TAG))) {
+        for (SlotEntryReference sr : PlayerCollarsMod.getEquippedAccessories(player, PlayerCollarsMod.PAWS_TAG)) {
             if (PawsItem.shouldPreventBlockInteraction(sr.stack(), block, isBreak)) {
                 return true;
             }

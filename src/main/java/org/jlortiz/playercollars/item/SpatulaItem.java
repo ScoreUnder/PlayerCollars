@@ -1,6 +1,5 @@
 package org.jlortiz.playercollars.item;
 
-import io.wispforest.accessories.api.AccessoriesCapability;
 import io.wispforest.accessories.api.slot.SlotEntryReference;
 import net.minecraft.component.EnchantmentEffectComponentTypes;
 import net.minecraft.enchantment.EnchantmentHelper;
@@ -49,15 +48,12 @@ public class SpatulaItem extends Item {
             }
         }
 
-        AccessoriesCapability cap = AccessoriesCapability.get(entity);
-        if (cap != null) {
-            for (SlotEntryReference p : cap.getAllEquipped()) {
-                if (EnchantmentHelper.hasAnyEnchantmentsWith(p.stack(), EnchantmentEffectComponentTypes.PREVENT_ARMOR_CHANGE)) {
-                    count++;
-                    if (world != null)
-                        entity.dropStack(world, p.stack());
-                    p.reference().setStack(ItemStack.EMPTY);
-                }
+        for (SlotEntryReference p : PlayerCollarsMod.getEquippedAccessories(entity, PlayerCollarsMod.OWNER_LOCKABLE_TAG)) {
+            if (EnchantmentHelper.hasAnyEnchantmentsWith(p.stack(), EnchantmentEffectComponentTypes.PREVENT_ARMOR_CHANGE)) {
+                count++;
+                if (world != null)
+                    entity.dropStack(world, p.stack());
+                p.reference().setStack(ItemStack.EMPTY);
             }
         }
 

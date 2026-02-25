@@ -1,6 +1,5 @@
 package org.jlortiz.playercollars.network;
 
-import io.wispforest.accessories.api.AccessoriesCapability;
 import io.wispforest.accessories.api.slot.SlotEntryReference;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.screenhandler.v1.ExtendedScreenHandlerFactory;
@@ -39,15 +38,13 @@ public record PacketOpenPawsConfig(UUID pawHolder, PawsScreenType screenType) im
         context.server().execute(() -> {
             PlayerEntity pet = context.player().getWorld().getPlayerByUuid(pawHolder);
             if (pet == null) return;
-            AccessoriesCapability cap = AccessoriesCapability.get(pet);
-            if (cap == null) return;
 
             if (!PlayerCollarsMod.getOwnershipLevel(pet, context.player()).isOwned()) {
                 context.player().sendMessage(Text.translatable("item.playercollars.paw_configurator.no_set_non_owner").formatted(Formatting.RED), true);
                 return;
             }
 
-            List<SlotEntryReference> pawsStack = cap.getEquipped((y) -> y.isIn(PlayerCollarsMod.PAWS_TAG));
+            List<SlotEntryReference> pawsStack = PlayerCollarsMod.getEquippedAccessories(pet, PlayerCollarsMod.PAWS_TAG);
             if (pawsStack.isEmpty()) {
                 context.player().sendMessage(Text.translatable("item.playercollars.paw_configurator.no_paws").formatted(Formatting.RED), true);
                 return;

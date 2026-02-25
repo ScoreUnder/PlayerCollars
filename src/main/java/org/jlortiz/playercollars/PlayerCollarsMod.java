@@ -143,6 +143,7 @@ public class PlayerCollarsMod implements ModInitializer {
 	public static final BedItem[] DOG_BED_ITEMS = new BedItem[DyeColor.values().length];
 
 	public static final TagKey<Item> COLLAR_TAG = TagKey.of(RegistryKeys.ITEM, Identifier.of("c", "collars"));
+	public static final TagKey<Item> OWNER_LOCKABLE_TAG = TagKey.of(RegistryKeys.ITEM, Identifier.of(MOD_ID, "owner_lockable"));
 	public static final TagKey<Block> PET_BED_BLOCK_TAG = TagKey.of(RegistryKeys.BLOCK, Identifier.of(MOD_ID, "pet_bed"));
 	public static final TagKey<Block> PET_BOWL_BLOCK_TAG = TagKey.of(RegistryKeys.BLOCK, Identifier.of(MOD_ID, "pet_bowl"));
 	public static final TagKey<Block> PET_BLOCK_TAG = TagKey.of(RegistryKeys.BLOCK, Identifier.of(MOD_ID, "for_pet_use"));
@@ -257,10 +258,17 @@ public class PlayerCollarsMod implements ModInitializer {
 	 * Find all item slots containing collars currently equipped by the player.
 	 */
 	public static @NotNull List<SlotEntryReference> getEquippedCollars(@NotNull LivingEntity player) {
+		return getEquippedAccessories(player, COLLAR_TAG);
+	}
+
+	/**
+	 * Find all item slots containing accessories of a given tag currently equipped by the player.
+	 */
+	public static @NotNull List<SlotEntryReference> getEquippedAccessories(@NotNull LivingEntity player, TagKey<Item> tag) {
 		AccessoriesCapability cap = AccessoriesCapability.get(player);
 		if (cap == null) return Collections.emptyList();
 
-		return cap.getEquipped(x -> x.isIn(PlayerCollarsMod.COLLAR_TAG));
+		return cap.getEquipped(x -> x.isIn(tag));
 	}
 
 	/**

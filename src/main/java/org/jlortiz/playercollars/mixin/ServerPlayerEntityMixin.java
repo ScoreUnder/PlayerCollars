@@ -1,7 +1,6 @@
 package org.jlortiz.playercollars.mixin;
 
 import com.mojang.authlib.GameProfile;
-import io.wispforest.accessories.api.AccessoriesCapability;
 import io.wispforest.accessories.api.slot.SlotEntryReference;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.LivingEntity;

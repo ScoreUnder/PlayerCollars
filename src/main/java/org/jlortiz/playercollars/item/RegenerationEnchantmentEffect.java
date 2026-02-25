@@ -2,7 +2,6 @@ package org.jlortiz.playercollars.item;
 
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import io.wispforest.accessories.api.AccessoriesCapability;
 import io.wispforest.accessories.api.slot.SlotEntryReference;
 import net.minecraft.enchantment.EnchantmentEffectContext;
 import net.minecraft.enchantment.EnchantmentLevelBasedValue;
