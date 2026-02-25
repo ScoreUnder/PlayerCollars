@@ -1,10 +1,6 @@
 package org.jlortiz.playercollars;
 
-import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.Encoder;
-import com.mojang.serialization.codecs.EitherCodec;
-import com.mojang.serialization.codecs.ListCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.wispforest.accessories.api.AccessoriesCapability;
 import io.wispforest.accessories.api.AccessoryRegistry;
@@ -67,7 +63,6 @@ import org.jlortiz.playercollars.leash.LeashImpl;
 import org.jlortiz.playercollars.leash.LeashProxyEntity;
 import org.jlortiz.playercollars.network.*;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -109,34 +104,24 @@ public class PlayerCollarsMod implements ModInitializer {
 			Identifier.of(MOD_ID, "name_tag_component"),
 			ComponentType.<Text>builder().codec(TextCodecs.CODEC).build());
 
-	private static final Codec<List<Either<TagKey<Block>, RegistryKey<Block>>>> CAN_INTERACT_COMPONENT_CODEC = Codec.withAlternative(
-			new ListCodec<>(new EitherCodec<>(TagKey.codec(RegistryKeys.BLOCK), RegistryKey.createCodec(RegistryKeys.BLOCK)), 0, 1024),
-			Codec.of(Encoder.error("deprecated"), new ListCodec<>(Identifier.CODEC, 0, 65535).map((x) -> {
-				List<Either<TagKey<Block>, RegistryKey<Block>>> ls = new ArrayList<>(x.size());
-				for (Identifier id : x) {
-					ls.add(Either.right(RegistryKey.of(RegistryKeys.BLOCK, id)));
-				}
-				return ls;
-			}))
-	);
-	public static final ComponentType<List<Either<TagKey<Block>, RegistryKey<Block>>>> CAN_INTERACT_COMPONENT_TYPE = Registry.register(
+	private static final @NotNull Codec<PawsPermissionData<Block>> PAWS_BLOCK_PERMISSION_CODEC =
+			PawsPermissionData.getCodec(RegistryKeys.BLOCK);
+	public static final ComponentType<PawsPermissionData<Block>> CAN_INTERACT_COMPONENT_TYPE = Registry.register(
 			Registries.DATA_COMPONENT_TYPE,
 			Identifier.of(MOD_ID, "can_interact_component"),
-			ComponentType.<List<Either<TagKey<Block>, RegistryKey<Block>>>>builder().codec(CAN_INTERACT_COMPONENT_CODEC).build());
+			ComponentType.<PawsPermissionData<Block>>builder().codec(PAWS_BLOCK_PERMISSION_CODEC).build());
 
-	private static final Codec<List<Either<TagKey<Block>, RegistryKey<Block>>>> CAN_BREAK_COMPONENT_CODEC = new ListCodec<>(
-			new EitherCodec<>(TagKey.codec(RegistryKeys.BLOCK), RegistryKey.createCodec(RegistryKeys.BLOCK)), 0, 1024);
-	public static final ComponentType<List<Either<TagKey<Block>, RegistryKey<Block>>>> CAN_BREAK_COMPONENT_TYPE = Registry.register(
+	public static final ComponentType<PawsPermissionData<Block>> CAN_BREAK_COMPONENT_TYPE = Registry.register(
 			Registries.DATA_COMPONENT_TYPE,
 			Identifier.of(MOD_ID, "can_break_component"),
-			ComponentType.<List<Either<TagKey<Block>, RegistryKey<Block>>>>builder().codec(CAN_BREAK_COMPONENT_CODEC).build());
+			ComponentType.<PawsPermissionData<Block>>builder().codec(PAWS_BLOCK_PERMISSION_CODEC).build());
 
-	private static final Codec<List<Either<TagKey<Item>, RegistryKey<Item>>>> HELD_ITEMS_COMPONENT_CODEC = new ListCodec<>(
-			new EitherCodec<>(TagKey.codec(RegistryKeys.ITEM), RegistryKey.createCodec(RegistryKeys.ITEM)), 0, 65535);
-	public static final ComponentType<List<Either<TagKey<Item>, RegistryKey<Item>>>> HELD_ITEMS_COMPONENT_TYPE = Registry.register(
+	private static final Codec<PawsPermissionData<Item>> PAWS_ITEM_PERMISSION_CODEC =
+			PawsPermissionData.getCodec(RegistryKeys.ITEM);
+	public static final ComponentType<PawsPermissionData<Item>> HELD_ITEMS_COMPONENT_TYPE = Registry.register(
 			Registries.DATA_COMPONENT_TYPE,
 			Identifier.of(MOD_ID, "held_items_component"),
-			ComponentType.<List<Either<TagKey<Item>, RegistryKey<Item>>>>builder().codec(HELD_ITEMS_COMPONENT_CODEC).build());
+			ComponentType.<PawsPermissionData<Item>>builder().codec(PAWS_ITEM_PERMISSION_CODEC).build());
 
 	public static final RegistryEntry<EntityAttribute> ATTR_CLICKER_DISTANCE = Registry.registerReference(
 			Registries.ATTRIBUTE, Identifier.of(MOD_ID, "clicker_distance"),
@@ -175,14 +160,14 @@ public class PlayerCollarsMod implements ModInitializer {
 	public static final Item[] DOG_BOWL_ITEMS = new Item[DyeColor.values().length];
 	public static final BlockEntityType<DogBowlBlock.DogBowlBlockEntity> DOG_BOWL_BLOCK_ENTITY;
 	public static final ItemGroup GROUP;
-	public static final ExtendedScreenHandlerType<PawsConfigScreenHandler<Block>, List<Either<TagKey<Block>, RegistryKey<Block>>>> PAWS_BLOCK_INTERACTION_CONFIG_SCREEN_HANDLER = new ExtendedScreenHandlerType<>(
-			PawsConfigScreenHandler.PawsBlockConfigScreenHandler::new, PacketCodecs.codec(CAN_INTERACT_COMPONENT_CODEC)
+	public static final ExtendedScreenHandlerType<PawsConfigScreenHandler<Block>, PawsPermissionData<Block>> PAWS_BLOCK_INTERACTION_CONFIG_SCREEN_HANDLER = new ExtendedScreenHandlerType<>(
+			PawsConfigScreenHandler.PawsBlockConfigScreenHandler::new, PacketCodecs.codec(PAWS_BLOCK_PERMISSION_CODEC)
 	);
-	public static final ExtendedScreenHandlerType<PawsConfigScreenHandler<Block>, List<Either<TagKey<Block>, RegistryKey<Block>>>> PAWS_BLOCK_BREAK_CONFIG_SCREEN_HANDLER = new ExtendedScreenHandlerType<>(
-			PawsConfigScreenHandler.PawsBlockBreakConfigScreenHandler::new, PacketCodecs.codec(CAN_BREAK_COMPONENT_CODEC)
+	public static final ExtendedScreenHandlerType<PawsConfigScreenHandler<Block>, PawsPermissionData<Block>> PAWS_BLOCK_BREAK_CONFIG_SCREEN_HANDLER = new ExtendedScreenHandlerType<>(
+			PawsConfigScreenHandler.PawsBlockBreakConfigScreenHandler::new, PacketCodecs.codec(PAWS_BLOCK_PERMISSION_CODEC)
 	);
-	public static final ExtendedScreenHandlerType<PawsConfigScreenHandler<Item>, List<Either<TagKey<Item>, RegistryKey<Item>>>> PAWS_ITEM_CONFIG_SCREEN_HANDLER = new ExtendedScreenHandlerType<>(
-			PawsConfigScreenHandler.PawsItemConfigScreenHandler::new, PacketCodecs.codec(HELD_ITEMS_COMPONENT_CODEC)
+	public static final ExtendedScreenHandlerType<PawsConfigScreenHandler<Item>, PawsPermissionData<Item>> PAWS_ITEM_CONFIG_SCREEN_HANDLER = new ExtendedScreenHandlerType<>(
+			PawsConfigScreenHandler.PawsItemConfigScreenHandler::new, PacketCodecs.codec(PAWS_ITEM_PERMISSION_CODEC)
 	);
 
     static {

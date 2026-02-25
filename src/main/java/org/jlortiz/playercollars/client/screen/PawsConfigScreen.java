@@ -3,6 +3,7 @@ package org.jlortiz.playercollars.client.screen;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.CheckboxWidget;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemConvertible;
@@ -35,6 +36,13 @@ public class PawsConfigScreen<T extends ItemConvertible> extends HandledScreen<P
         listWidget = addDrawableChild(new TagLikeListWidget<>(TOP_FRAME_WIDTH, TOP_FRAME_HEIGHT - BUTTON_HEIGHT * 2, x + TOP_FRAME_X, y + TOP_FRAME_Y,
                 client.textRenderer.fontHeight, handler.getRegistryKey(), id -> handleButtonClick(id + PawsConfigScreenHandler.LIST_ID_OFFSET)));
         listWidget.setList(handler.listToDisplay);
+        addDrawableChild(CheckboxWidget
+                .builder(Text.translatable("gui.playercollars.paw_configurator.filter.is_denylist"), textRenderer)
+                .checked(handler.isDenyList())
+                .callback((widget, checked) -> handleButtonClick(PawsConfigScreenHandler.BTN_TOGGLE_DENYLIST))
+                .pos(x + TOP_FRAME_X, y + TOP_FRAME_Y + TOP_FRAME_HEIGHT - BUTTON_HEIGHT * 2)
+                .maxWidth(TOP_FRAME_WIDTH)
+                .build());
         addDrawableChild(ButtonWidget
                 .builder(Text.translatable("gui.playercollars.paw_configurator.filter.allow_all"), (btn) -> handleButtonClick(PawsConfigScreenHandler.BTN_ALLOW_ALL_ID))
                 .dimensions(x + TOP_FRAME_X, y + TOP_FRAME_Y + TOP_FRAME_HEIGHT - BUTTON_HEIGHT, TOP_FRAME_WIDTH / 2, BUTTON_HEIGHT)

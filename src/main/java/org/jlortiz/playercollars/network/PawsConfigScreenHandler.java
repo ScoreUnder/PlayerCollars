@@ -2,8 +2,6 @@ package org.jlortiz.playercollars.network;
 
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.EitherCodec;
-import com.mojang.serialization.codecs.ListCodec;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
@@ -36,7 +34,8 @@ import java.util.stream.Stream;
 public abstract class PawsConfigScreenHandler<T extends ItemConvertible> extends ScreenHandler implements GhostSlotContainer {
     public static final int BTN_DENY_ALL_ID = 0;
     public static final int BTN_ALLOW_ALL_ID = 1;
-    public static final int LIST_ID_OFFSET = 2;
+    public static final int BTN_TOGGLE_DENYLIST = 2;
+    public static final int LIST_ID_OFFSET = 3;
     private final Inventory inventory;
     public final List<Either<TagKey<T>, RegistryKey<T>>> data;
     public List<Either<TagKey<T>, RegistryKey<T>>> listToDisplay;
@@ -44,9 +43,10 @@ public abstract class PawsConfigScreenHandler<T extends ItemConvertible> extends
     protected final World world;
     protected final PlayerEntity player;
     private boolean dirty;
+    private boolean isDenyList;
 
     public PawsConfigScreenHandler(ScreenHandlerType<? extends PawsConfigScreenHandler<T>> id, int syncId,
-                                   PlayerInventory playerInventory, List<Either<TagKey<T>, RegistryKey<T>>> data) {
+                                   PlayerInventory playerInventory, PawsPermissionData<T> data) {
         super(id, syncId);
         this.inventory = new SimpleInventory(1) {
             @Override
@@ -55,11 +55,11 @@ public abstract class PawsConfigScreenHandler<T extends ItemConvertible> extends
                 PawsConfigScreenHandler.this.onContentChanged(this);
             }
         };
-        this.data = (data == null) ? new ArrayList<>() : new ArrayList<>(data);
-        this.listToDisplay = data;
+        this.listToDisplay = this.data = (data == null) ? new ArrayList<>() : new ArrayList<>(data.permittedList());
         this.world = playerInventory.player.getWorld();
         this.player = playerInventory.player;
         this.dirty = false;
+        this.isDenyList = data != null && data.isDenyList();
         inventory.onOpen(playerInventory.player);
 
         this.addSlot(new Slot(inventory, 0, 175, 108) {
@@ -134,6 +134,8 @@ public abstract class PawsConfigScreenHandler<T extends ItemConvertible> extends
             data.add(Either.right(getNullEntry()));
         } else if (id == BTN_ALLOW_ALL_ID) {
             data.clear();
+        } else if (id == BTN_TOGGLE_DENYLIST) {
+            setIsDenyList(!isDenyList());
         } else {
             int listSlot = id - LIST_ID_OFFSET;
             if (listSlot < 0) return false;
@@ -234,8 +236,15 @@ public abstract class PawsConfigScreenHandler<T extends ItemConvertible> extends
     }
 
     private Codec<List<Either<TagKey<T>, RegistryKey<T>>>> getCodec() {
-        RegistryKey<Registry<T>> key = getRegistryKey();
-        return new ListCodec<>(new EitherCodec<>(TagKey.codec(key), RegistryKey.createCodec(key)), 0, 65535);
+        return PawsPermissionData.getListCodec(getRegistryKey());
+    }
+
+    public boolean isDenyList() {
+        return isDenyList;
+    }
+
+    public void setIsDenyList(boolean val) {
+        isDenyList = val;
     }
 
     protected abstract List<Either<TagKey<T>, RegistryKey<T>>> genForItem(Item item);
@@ -245,11 +254,11 @@ public abstract class PawsConfigScreenHandler<T extends ItemConvertible> extends
     protected abstract RegistryKey<T> getNullEntry();
 
     public static class PawsBlockConfigScreenHandler extends PawsConfigScreenHandler<Block> {
-        public PawsBlockConfigScreenHandler(int syncId, PlayerInventory playerInventory, List<Either<TagKey<Block>, RegistryKey<Block>>> data) {
+        public PawsBlockConfigScreenHandler(int syncId, PlayerInventory playerInventory, PawsPermissionData<Block> data) {
             super(PlayerCollarsMod.PAWS_BLOCK_INTERACTION_CONFIG_SCREEN_HANDLER, syncId, playerInventory, data);
         }
 
-        public PawsBlockConfigScreenHandler(ScreenHandlerType<? extends PawsConfigScreenHandler<Block>> id, int syncId, PlayerInventory playerInventory, List<Either<TagKey<Block>, RegistryKey<Block>>> data) {
+        public PawsBlockConfigScreenHandler(ScreenHandlerType<? extends PawsConfigScreenHandler<Block>> id, int syncId, PlayerInventory playerInventory, PawsPermissionData<Block> data) {
             super(id, syncId, playerInventory, data);
         }
 
@@ -273,7 +282,7 @@ public abstract class PawsConfigScreenHandler<T extends ItemConvertible> extends
             return world.getRegistryManager().getOrThrow(RegistryKeys.BLOCK).getKey(Blocks.AIR).get();
         }
 
-        public ComponentType<? super List<Either<TagKey<Block>, RegistryKey<Block>>>> getComponentType() {
+        public ComponentType<? super PawsPermissionData<Block>> getComponentType() {
             return PlayerCollarsMod.CAN_INTERACT_COMPONENT_TYPE;
         }
 
@@ -282,23 +291,23 @@ public abstract class PawsConfigScreenHandler<T extends ItemConvertible> extends
             super.onClosed(player);
             if (pawsStacks != null)
                 for (ItemStack ps : pawsStacks)
-                    ps.set(getComponentType(), data.isEmpty() ? null : data);
+                    ps.set(getComponentType(), data.isEmpty() ? null : new PawsPermissionData<>(data, isDenyList()));
         }
     }
 
     public static class PawsBlockBreakConfigScreenHandler extends PawsBlockConfigScreenHandler {
-        public PawsBlockBreakConfigScreenHandler(int syncId, PlayerInventory playerInventory, List<Either<TagKey<Block>, RegistryKey<Block>>> data) {
+        public PawsBlockBreakConfigScreenHandler(int syncId, PlayerInventory playerInventory, PawsPermissionData<Block> data) {
             super(PlayerCollarsMod.PAWS_BLOCK_BREAK_CONFIG_SCREEN_HANDLER, syncId, playerInventory, data);
         }
 
         @Override
-        public ComponentType<? super List<Either<TagKey<Block>, RegistryKey<Block>>>> getComponentType() {
+        public ComponentType<? super PawsPermissionData<Block>> getComponentType() {
             return PlayerCollarsMod.CAN_BREAK_COMPONENT_TYPE;
         }
     }
 
     public static class PawsItemConfigScreenHandler extends PawsConfigScreenHandler<Item> {
-        public PawsItemConfigScreenHandler(int syncId, PlayerInventory playerInventory, List<Either<TagKey<Item>, RegistryKey<Item>>> data) {
+        public PawsItemConfigScreenHandler(int syncId, PlayerInventory playerInventory, PawsPermissionData<Item> data) {
             super(PlayerCollarsMod.PAWS_ITEM_CONFIG_SCREEN_HANDLER, syncId, playerInventory, data);
         }
 
@@ -326,7 +335,7 @@ public abstract class PawsConfigScreenHandler<T extends ItemConvertible> extends
             super.onClosed(player);
             if (pawsStacks != null)
                 for (ItemStack ps : pawsStacks)
-                    ps.set(PlayerCollarsMod.HELD_ITEMS_COMPONENT_TYPE, data.isEmpty() ? null : data);
+                    ps.set(PlayerCollarsMod.HELD_ITEMS_COMPONENT_TYPE, data.isEmpty() ? null : new PawsPermissionData<>(data, isDenyList()));
         }
     }
 }

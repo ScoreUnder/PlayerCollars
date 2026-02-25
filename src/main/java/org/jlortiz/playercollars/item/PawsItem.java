@@ -14,6 +14,7 @@ import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.NotNull;
 import org.jlortiz.playercollars.PlayerCollarsMod;
+import org.jlortiz.playercollars.network.PawsPermissionData;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,24 +26,24 @@ public class PawsItem extends FootPawsItem {
 
     public static boolean shouldPreventBlockInteraction(ItemStack stack, @NotNull BlockState block, boolean isBreak) {
         if (block.isIn(isBreak ? PlayerCollarsMod.PAWS_ALLOW_BREAK : PlayerCollarsMod.PAWS_ALLOW_INTERACT)) return false;
-        List<Either<TagKey<Block>, RegistryKey<Block>>> allowed = stack.get(isBreak ? PlayerCollarsMod.CAN_BREAK_COMPONENT_TYPE : PlayerCollarsMod.CAN_INTERACT_COMPONENT_TYPE);
+        PawsPermissionData<Block> allowed = stack.get(isBreak ? PlayerCollarsMod.CAN_BREAK_COMPONENT_TYPE : PlayerCollarsMod.CAN_INTERACT_COMPONENT_TYPE);
         Optional<RegistryKey<Block>> key = block.getRegistryEntry().getKey();
         if (allowed == null || key.isEmpty()) return false;
-        for (Either<TagKey<Block>, RegistryKey<Block>> entry : allowed) {
-            if (entry.map(block::isIn, (y) -> y.equals(key.get()))) return false;
+        for (Either<TagKey<Block>, RegistryKey<Block>> entry : allowed.permittedList()) {
+            if (entry.map(block::isIn, (y) -> y.equals(key.get()))) return allowed.isDenyList();
         }
-        return true;
+        return !allowed.isDenyList();
     }
 
     public static boolean shouldDrop(ItemStack pawsStack, ItemStack thing) {
         if (thing.isEmpty()) return false;
-        List<Either<TagKey<Item>, RegistryKey<Item>>> slippery = pawsStack.get(PlayerCollarsMod.HELD_ITEMS_COMPONENT_TYPE);
+        PawsPermissionData<Item> slippery = pawsStack.get(PlayerCollarsMod.HELD_ITEMS_COMPONENT_TYPE);
         Optional<RegistryKey<Item>> key = thing.getRegistryEntry().getKey();
         if (slippery == null || key.isEmpty()) return false;
-        for (Either<TagKey<Item>, RegistryKey<Item>> entry : slippery) {
-            if (entry.map(thing::isIn, (y) -> y.equals(key.get()))) return false;
+        for (Either<TagKey<Item>, RegistryKey<Item>> entry : slippery.permittedList()) {
+            if (entry.map(thing::isIn, (y) -> y.equals(key.get()))) return slippery.isDenyList();
         }
-        return true;
+        return !slippery.isDenyList();
     }
 
     @Override

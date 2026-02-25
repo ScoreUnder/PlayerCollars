@@ -90,7 +90,7 @@ public record PacketOpenPawsConfig(UUID pawHolder, PawsScreenType screenType) im
                         case ITEM_HOLD -> PlayerCollarsMod.HELD_ITEMS_COMPONENT_TYPE;
                         case BLOCK_INTERACT -> PlayerCollarsMod.CAN_INTERACT_COMPONENT_TYPE;
                         case BLOCK_BREAK -> PlayerCollarsMod.CAN_BREAK_COMPONENT_TYPE;
-                    })).orElse(List.of());
+                    })).orElse(PawsPermissionData.empty());
                 }
             });
         });
