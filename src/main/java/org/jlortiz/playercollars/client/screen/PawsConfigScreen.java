@@ -15,7 +15,7 @@ import org.jlortiz.playercollars.network.PawsConfigScreenHandler;
 public class PawsConfigScreen<T extends ItemConvertible> extends HandledScreen<PawsConfigScreenHandler<T>> implements PositionedScreen {
     private static final Identifier TEXTURE = Identifier.of(PlayerCollarsMod.MOD_ID, "textures/gui/paw_controller.png");
     private static final Identifier WIDGETS_TEXTURE = Identifier.of(PlayerCollarsMod.MOD_ID, "textures/gui/paw_controller_widgets.png");
-    private static final int BUTTON_HEIGHT = 16;
+    private static final int BUTTON_HEIGHT = 18;
     private static final int TOP_FRAME_HEIGHT = 106;
     private static final int TOP_FRAME_WIDTH = 160;
     private static final int TOP_FRAME_Y = 18;
@@ -40,7 +40,7 @@ public class PawsConfigScreen<T extends ItemConvertible> extends HandledScreen<P
                 .builder(Text.translatable("gui.playercollars.paw_configurator.filter.is_denylist"), textRenderer)
                 .checked(handler.isDenyList())
                 .callback((widget, checked) -> handleButtonClick(PawsConfigScreenHandler.BTN_TOGGLE_DENYLIST))
-                .pos(x + TOP_FRAME_X, y + TOP_FRAME_Y + TOP_FRAME_HEIGHT - BUTTON_HEIGHT * 2)
+                .pos(x + TOP_FRAME_X, y + TOP_FRAME_Y + TOP_FRAME_HEIGHT - BUTTON_HEIGHT * 2 + 1)
                 .maxWidth(TOP_FRAME_WIDTH)
                 .build());
         addDrawableChild(ButtonWidget
