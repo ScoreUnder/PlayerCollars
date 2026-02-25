@@ -8,20 +8,18 @@ import net.minecraft.component.type.FoodComponent;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.IntProperty;
 import net.minecraft.state.property.Properties;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.DyeColor;
-import net.minecraft.util.Hand;
-import net.minecraft.util.Identifier;
+import net.minecraft.util.*;
+import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -43,8 +41,8 @@ public class DogBowlBlock extends Block implements BlockEntityProvider {
             Block.createCuboidShape(2.0, 0.0, 14.0, 14.0, 5.0, 15.0),
             Block.createCuboidShape(1.0, 0.0, 1.0, 2.0, 5.0, 15.0),
             Block.createCuboidShape(14.0, 0.0, 1.0, 15.0, 5.0, 15.0)
-            );
-    private static final VoxelShape[] SHAPE = new VoxelShape[] {
+    );
+    private static final VoxelShape[] SHAPE = new VoxelShape[]{
             VoxelShapes.union(SHAPE_BASE, Block.createCuboidShape(2.0, 0.0, 2.0, 14.0, 1.0, 14.0)),
             VoxelShapes.union(SHAPE_BASE, Block.createCuboidShape(2.0, 0.0, 2.0, 14.0, 2.0, 14.0)),
             VoxelShapes.union(SHAPE_BASE, Block.createCuboidShape(2.0, 0.0, 2.0, 14.0, 4.0, 14.0)),
@@ -112,9 +110,11 @@ public class DogBowlBlock extends Block implements BlockEntityProvider {
     }
 
     @Override
-    public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
-        if (world.getBlockEntity(pos) instanceof DogBowlBlockEntity be) be.drop();
-        return super.onBreak(world, pos, state, player);
+    protected void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+        if (!state.isOf(newState.getBlock()) && world.getBlockEntity(pos) instanceof DogBowlBlockEntity be) {
+            ItemScatterer.spawn(world, pos, DefaultedList.copyOf(ItemStack.EMPTY, be.inBowl));
+        }
+        super.onStateReplaced(state, world, pos, newState, moved);
     }
 
     @Override
