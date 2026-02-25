@@ -77,12 +77,11 @@ public class RecipeDataGenerator extends FabricRecipeProvider {
                         .criterion(hasItem(Items.GOLD_INGOT), conditionsFromTag(ConventionalItemTags.GOLD_INGOTS))
                         .offerTo(exporter);
                 for (DyeColor c : DyeColor.values()) {
-                    generateBed(exporter, PlayerCollarsMod.DOG_BED_ITEMS[c.ordinal()], DatagenEntrypoint.WOOLS[c.ordinal()]);
-                    generateBowl(exporter, PlayerCollarsMod.DOG_BOWL_ITEMS[c.ordinal()], DatagenEntrypoint.TERRACOTTAS[c.ordinal()]);
-                }
-                for (int i = 0; i < PlayerCollarsMod.PAWS_DYE_COLORS.length; i++) {
-                    generatePaws(exporter, PlayerCollarsMod.PAWS_ITEMS[i], DatagenEntrypoint.WOOLS[PlayerCollarsMod.PAWS_DYE_COLORS[i].ordinal()]);
-                    generateFootPaws(exporter, PlayerCollarsMod.FOOT_PAWS_ITEMS[i], DatagenEntrypoint.WOOLS[PlayerCollarsMod.PAWS_DYE_COLORS[i].ordinal()]);
+                    int i = c.ordinal();
+                    generateBed(exporter, PlayerCollarsMod.DOG_BED_ITEMS[i], DatagenEntrypoint.WOOLS[i]);
+                    generateBowl(exporter, PlayerCollarsMod.DOG_BOWL_ITEMS[i], DatagenEntrypoint.TERRACOTTAS[i]);
+                    generatePaws(exporter, PlayerCollarsMod.PAWS_ITEMS[i], DatagenEntrypoint.WOOLS[i]);
+                    generateFootPaws(exporter, PlayerCollarsMod.FOOT_PAWS_ITEMS[i], DatagenEntrypoint.WOOLS[i]);
                 }
             }
 

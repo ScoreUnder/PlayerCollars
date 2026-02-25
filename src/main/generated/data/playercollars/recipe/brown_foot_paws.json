@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "foot_paws",
+  "key": {
+    "l": "minecraft:leather",
+    "w": "minecraft:brown_wool"
+  },
+  "pattern": [
+    " w ",
+    " w ",
+    "wlw"
+  ],
+  "result": {
+    "count": 1,
+    "id": "playercollars:brown_foot_paws"
+  }
+}

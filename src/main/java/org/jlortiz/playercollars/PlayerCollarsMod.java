@@ -63,9 +63,7 @@ import org.jlortiz.playercollars.leash.LeashImpl;
 import org.jlortiz.playercollars.leash.LeashProxyEntity;
 import org.jlortiz.playercollars.network.*;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.UnaryOperator;
 
 public class PlayerCollarsMod implements ModInitializer {
@@ -148,13 +146,13 @@ public class PlayerCollarsMod implements ModInitializer {
 	public static final TagKey<Block> PET_BOWL_BLOCK_TAG = TagKey.of(RegistryKeys.BLOCK, Identifier.of(MOD_ID, "pet_bowl"));
 	public static final TagKey<Block> PET_BLOCK_TAG = TagKey.of(RegistryKeys.BLOCK, Identifier.of(MOD_ID, "for_pet_use"));
 
-	public static final DyeColor[] PAWS_DYE_COLORS = new DyeColor[]{DyeColor.WHITE, DyeColor.LIGHT_GRAY,
-			DyeColor.GRAY, DyeColor.BLACK, DyeColor.BLUE, DyeColor.RED, DyeColor.PURPLE};
-	public static final PawsItem[] PAWS_ITEMS = new PawsItem[PAWS_DYE_COLORS.length];
+	public static final Set<DyeColor> PAWS_PINK_BEANS_DYE_COLORS = new HashSet<>(List.of(DyeColor.WHITE, DyeColor.LIGHT_GRAY,
+			DyeColor.GRAY, DyeColor.BLACK, DyeColor.BLUE, DyeColor.RED, DyeColor.PURPLE, DyeColor.BROWN));
+	public static final PawsItem[] PAWS_ITEMS = new PawsItem[DyeColor.values().length];
 	public static final TagKey<Block> PAWS_ALLOW_BREAK = TagKey.of(RegistryKeys.BLOCK, Identifier.of(MOD_ID, "paws_allow_break"));
 	public static final TagKey<Block> PAWS_ALLOW_INTERACT = TagKey.of(RegistryKeys.BLOCK, Identifier.of(MOD_ID, "paws_allow_interact"));
 	public static final TagKey<Item> PAWS_TAG = TagKey.of(RegistryKeys.ITEM, Identifier.of(MOD_ID, "paws"));
-	public static final FootPawsItem[] FOOT_PAWS_ITEMS = new FootPawsItem[PAWS_DYE_COLORS.length];
+	public static final FootPawsItem[] FOOT_PAWS_ITEMS = new FootPawsItem[DyeColor.values().length];
 	public static final TagKey<Item> FOOT_PAWS_TAG = TagKey.of(RegistryKeys.ITEM, Identifier.of(MOD_ID, "foot_paws"));
 
 	public static final DogBowlBlock[] DOG_BOWLS = new DogBowlBlock[DyeColor.values().length];
@@ -359,22 +357,21 @@ public class PlayerCollarsMod implements ModInitializer {
 		AccessoryRegistry.register(COLLAR_ITEM, COLLAR_ITEM);
         AccessoryRegistry.register(TAGLESS_COLLAR_ITEM, COLLAR_ITEM);
 
-		for (int i = 0; i < PAWS_DYE_COLORS.length; i++) {
-			DyeColor c = PAWS_DYE_COLORS[i];
-			RegistryKey<Item> itemKey = PawsItem.getRegistryKey(c);
-			PAWS_ITEMS[i] = Registry.register(Registries.ITEM, itemKey,
-					new PawsItem(itemKey, c.getFireworkColor(), 0xF196CF));
-            itemKey = FootPawsItem.getRegistryKey(c);
-			FOOT_PAWS_ITEMS[i] = Registry.register(Registries.ITEM, itemKey,
-					new FootPawsItem(itemKey, c.getFireworkColor(), 0xF196CF));
-		}
-
 		for (DyeColor c : DyeColor.values()) {
 			RegistryKey<Block> blockKey = DogBedBlock.getRegistryKey(c);
-			DOG_BEDS[c.ordinal()] = Registry.register(Registries.BLOCK, blockKey, new DogBedBlock(c, blockKey));
+			int i = c.ordinal();
+			DOG_BEDS[i] = Registry.register(Registries.BLOCK, blockKey, new DogBedBlock(c, blockKey));
 			RegistryKey<Item> itemKey = RegistryKey.of(RegistryKeys.ITEM, blockKey.getValue());
-			DOG_BED_ITEMS[c.ordinal()] = Registry.register(Registries.ITEM, itemKey,
-					new BedItem(DOG_BEDS[c.ordinal()], (new Item.Settings()).maxCount(1).registryKey(itemKey)));
+			DOG_BED_ITEMS[i] = Registry.register(Registries.ITEM, itemKey,
+					new BedItem(DOG_BEDS[i], (new Item.Settings()).maxCount(1).registryKey(itemKey)));
+
+			int beansColor = PAWS_PINK_BEANS_DYE_COLORS.contains(c) ? 0xF196CF : DyeColor.BLACK.getFireworkColor();
+			itemKey = PawsItem.getRegistryKey(c);
+			PAWS_ITEMS[i] = Registry.register(Registries.ITEM, itemKey,
+					new PawsItem(itemKey, c.getFireworkColor(), beansColor));
+			itemKey = FootPawsItem.getRegistryKey(c);
+			FOOT_PAWS_ITEMS[i] = Registry.register(Registries.ITEM, itemKey,
+					new FootPawsItem(itemKey, c.getFireworkColor(), beansColor));
 		}
 
 		PlayerBlockBreakEvents.BEFORE.register((World var1, PlayerEntity player, BlockPos blockPos, BlockState var4, @Nullable BlockEntity var5) -> {
