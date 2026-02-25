@@ -94,7 +94,7 @@ public class DogBowlBlock extends Block implements BlockEntityProvider {
         if (stack.isOf(Items.MILK_BUCKET) && be.getCount() == 0) {
             be.insert(stack);
             state = state.with(MILK, true);
-            world.setBlockState(pos, state, 2);
+            world.setBlockState(pos, state, Block.NOTIFY_LISTENERS);
             if (!player.isCreative()) player.setStackInHand(hand, new ItemStack(Items.BUCKET));
             player.playSound(SoundEvents.ITEM_BUCKET_EMPTY);
             return ActionResult.SUCCESS;
@@ -105,7 +105,7 @@ public class DogBowlBlock extends Block implements BlockEntityProvider {
         if (decr > 0) {
             stack.decrement(decr);
             state = state.with(LEVEL, Math.min((be.getCount() + 20) / 21, 3));
-            world.setBlockState(pos, state, 2);
+            world.setBlockState(pos, state, Block.NOTIFY_LISTENERS);
             return ActionResult.SUCCESS;
         }
         return ActionResult.FAIL;
@@ -125,14 +125,14 @@ public class DogBowlBlock extends Block implements BlockEntityProvider {
         if (is.isEmpty()) return ActionResult.PASS;
         if (is.isOf(Items.MILK_BUCKET)) {
             state = state.with(MILK, false);
-            world.setBlockState(pos, state, 2);
+            world.setBlockState(pos, state, Block.NOTIFY_LISTENERS);
             if (!world.isClient()) player.clearStatusEffects();
             player.playSound(SoundEvents.ENTITY_GENERIC_DRINK.value());
             return ActionResult.SUCCESS;
         }
 
         state = state.with(LEVEL, Math.min((be.getCount() + 20) / 21, 3));
-        world.setBlockState(pos, state, 2);
+        world.setBlockState(pos, state, Block.NOTIFY_LISTENERS);
 
         FoodComponent food = is.get(DataComponentTypes.FOOD);
         if (food != null && player.canConsume(food.canAlwaysEat())) {
