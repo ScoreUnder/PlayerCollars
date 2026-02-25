@@ -30,6 +30,8 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.List;
+
 @Mixin(PlayerEntity.class)
 public abstract class PlayerEntityMixin extends LivingEntity {
     @Shadow @Final PlayerInventory inventory;
@@ -45,7 +47,11 @@ public abstract class PlayerEntityMixin extends LivingEntity {
         float ret = instance.getBlockBreakingSpeed(block);
         AccessoriesCapability cap = AccessoriesCapability.get(this);
         if (cap == null) return ret;
-        if (cap.getEquipped((x) -> x.isIn(PlayerCollarsMod.PAWS_TAG)).isEmpty()) return ret;
+        List<SlotEntryReference> equippedPaws = cap.getEquipped((x) -> x.isIn(PlayerCollarsMod.PAWS_TAG));
+        if (equippedPaws.isEmpty()) return ret;
+        for (var paw : equippedPaws) {
+            if (PawsItem.shouldPreventBlockInteraction(paw.stack(), block, true)) return 0;
+        }
         if (TagUtil.isIn(BlockTags.SHOVEL_MINEABLE, block.getBlock())) {
             return ToolMaterial.IRON.speed();
         }

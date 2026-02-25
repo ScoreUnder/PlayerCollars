@@ -31,9 +31,6 @@ public class PawsEventHandler {
     }
 
     public static void registerPawsEvents() {
-        AttackBlockCallback.EVENT.register((PlayerEntity player, World world, Hand hand, BlockPos pos, Direction direction) ->
-                shouldPawsBlock(player, world.getBlockState(pos), true) ? ActionResult.FAIL : ActionResult.PASS);
-
         PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, entity) ->
                 !shouldPawsBlock(player, world.getBlockState(pos), true));
 
