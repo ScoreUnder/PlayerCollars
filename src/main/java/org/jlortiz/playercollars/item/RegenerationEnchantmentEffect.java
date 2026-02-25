@@ -7,6 +7,7 @@ import net.minecraft.enchantment.EnchantmentEffectContext;
 import net.minecraft.enchantment.EnchantmentLevelBasedValue;
 import net.minecraft.enchantment.effect.EnchantmentEntityEffect;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
@@ -24,18 +25,32 @@ public record RegenerationEnchantmentEffect(EnchantmentLevelBasedValue level) im
             ).apply(instance, RegenerationEnchantmentEffect::new));
 
     @Override
-    public void apply(ServerWorld world, int level, EnchantmentEffectContext context, Entity user, Vec3d pos) {
-        if (context.owner() == null) return;
-        List<SlotEntryReference> ls = PlayerCollarsMod.getEquippedCollars(context.owner());
+    public void apply(ServerWorld world, int enchantLevel, EnchantmentEffectContext context, Entity user, Vec3d pos) {
+        LivingEntity player = context.owner();
+        if (player == null) return;
+        if (player.age % 20 != 0) return; // Perform checks only once every few ticks. No need to be especially precise.
+        List<SlotEntryReference> ls = PlayerCollarsMod.getEquippedCollars(player);
         for (SlotEntryReference p : ls) {
             OwnerComponent oc = p.stack().get(PlayerCollarsMod.OWNER_COMPONENT_TYPE);
-            if (oc != null) {
-                PlayerEntity own = world.getPlayerByUuid(oc.uuid());
-                if (own != null && own.distanceTo(user) < 16) {
-                    context.owner().addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 40, level, false, false, false));
-                    return;
-                }
-            }
+            if (oc == null) continue;
+
+            PlayerEntity own = world.getPlayerByUuid(oc.uuid());
+            if (own == null || own.squaredDistanceTo(user) >= 16 * 16) continue;
+
+            onOwnerNearby(player, enchantLevel);
+            return;
+        }
+    }
+
+    private void onOwnerNearby(LivingEntity player, int enchantLevel) {
+        int effectLevel = Math.round(level.getValue(enchantLevel));
+        StatusEffectInstance existingRegenEffect = player.getStatusEffect(StatusEffects.REGENERATION);
+        int duration = existingRegenEffect == null || existingRegenEffect.getAmplifier() != effectLevel ? 40 : existingRegenEffect.getDuration();
+        if (duration < 50) {
+            // Keep duration above 50 if possible
+            // 'Regeneration I' activates once every 50 ticks, but it uses its remaining duration to figure
+            // out when to activate. If duration is <50, it never activates.
+            player.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, duration + 50, effectLevel, false, false, false));
         }
     }
 
