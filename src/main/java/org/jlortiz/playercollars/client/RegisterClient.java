@@ -21,12 +21,14 @@ public class RegisterClient implements ClientModInitializer {
     public void onInitializeClient() {
         AccessoriesRendererRegistry.registerRenderer(PlayerCollarsMod.COLLAR_ITEM, CollarRenderer::new);
         AccessoriesRendererRegistry.registerRenderer(PlayerCollarsMod.TAGLESS_COLLAR_ITEM, CollarRenderer::new);
-        PawRenderer renderer = new PawRenderer();
-        for (FootPawsItem p : PlayerCollarsMod.PAWS_ITEMS)
+        for (FootPawsItem p : PlayerCollarsMod.PAWS_ITEMS) {
+            PawRenderer renderer = new PawRenderer();
             AccessoriesRendererRegistry.registerRenderer(p, () -> renderer);
-        FootPawRenderer renderer2 = new FootPawRenderer();
-        for (FootPawsItem p : PlayerCollarsMod.FOOT_PAWS_ITEMS)
-            AccessoriesRendererRegistry.registerRenderer(p, () -> renderer2);
+        }
+        for (FootPawsItem p : PlayerCollarsMod.FOOT_PAWS_ITEMS) {
+            FootPawRenderer renderer = new FootPawRenderer();
+            AccessoriesRendererRegistry.registerRenderer(p, () -> renderer);
+        }
         ClientPlayNetworking.registerGlobalReceiver(PacketLookAtLerped.ID, (payload, context) ->
                 context.client().execute(() -> RotationLerpHandler.beginClickTurn(payload.vec())));
         ClientPlayNetworking.registerGlobalReceiver(PacketUpdatePawsConfig.ID, PacketUpdatePawsConfig::handle);
