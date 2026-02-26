@@ -339,6 +339,10 @@ public class PlayerCollarsMod implements ModInitializer {
 		return null;
 	}
 
+	public static double getFootPawsCrawlingSpeed() {
+		return 0.8;
+	}
+
 	@Override
 	public void onInitialize() {
 		Registry.register(Registries.ENCHANTMENT_ENTITY_EFFECT_TYPE, Identifier.of(MOD_ID, "regeneration_effect"), RegenerationEnchantmentEffect.CODEC);

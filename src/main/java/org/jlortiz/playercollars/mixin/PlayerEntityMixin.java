@@ -3,10 +3,7 @@ package org.jlortiz.playercollars.mixin;
 import io.wispforest.accessories.api.slot.SlotEntryReference;
 import net.fabricmc.fabric.api.tag.convention.v2.TagUtil;
 import net.minecraft.block.BlockState;
-import net.minecraft.entity.EntityPose;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.player.PlayerAbilities;
@@ -24,6 +21,7 @@ import org.jlortiz.playercollars.item.PawsItem;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
@@ -35,6 +33,9 @@ import java.util.List;
 
 @Mixin(PlayerEntity.class)
 public abstract class PlayerEntityMixin extends LivingEntity {
+    @Unique
+    private static final EntityDimensions CRAWLING_DIMENSIONS = EntityDimensions.changing(0.6f, 0.9f).withEyeHeight(0.7f);
+
     @Shadow @Final PlayerInventory inventory;
 
     @Shadow @Nullable public abstract ItemEntity dropItem(ItemStack stack, boolean retainOwnership);
@@ -88,10 +89,15 @@ public abstract class PlayerEntityMixin extends LivingEntity {
     @ModifyArg(method="updatePose", at=@At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;setPose(Lnet/minecraft/entity/EntityPose;)V"))
     private EntityPose playercollars$forceCrawl(EntityPose entityPose) {
         if (!getAbilities().flying && (entityPose == EntityPose.CROUCHING || entityPose == EntityPose.STANDING)) {
-            if (!PlayerCollarsMod.getEquippedAccessories(this, PlayerCollarsMod.FOOT_PAWS_TAG).isEmpty())
+            if (hasFootPaws())
                 return EntityPose.SWIMMING;
         }
         return entityPose;
+    }
+
+    @Unique
+    private boolean hasFootPaws() {
+        return !PlayerCollarsMod.getEquippedAccessories(this, PlayerCollarsMod.FOOT_PAWS_TAG).isEmpty();
     }
 
     @Inject(method = "getDisplayName", at = @At("HEAD"), cancellable = true)
@@ -99,6 +105,13 @@ public abstract class PlayerEntityMixin extends LivingEntity {
         Text collaredName = PlayerCollarsMod.getPlayerCustomName(this);
         if (collaredName != null) {
             cir.setReturnValue(collaredName);
+        }
+    }
+
+    @Inject(method = "getBaseDimensions", at = @At("HEAD"), cancellable = true)
+    private void getBaseDimensions(EntityPose pose, CallbackInfoReturnable<EntityDimensions> cir) {
+        if (pose == EntityPose.SWIMMING && hasFootPaws()) {
+            cir.setReturnValue(CRAWLING_DIMENSIONS);
         }
     }
 }

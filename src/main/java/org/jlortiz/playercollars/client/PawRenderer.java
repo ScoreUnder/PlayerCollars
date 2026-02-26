@@ -14,17 +14,39 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.ModelTransformationMode;
 import net.minecraft.util.Arm;
 import net.minecraft.world.World;
+import org.jlortiz.playercollars.PlayerCollarsMod;
+import org.jlortiz.playercollars.accessor.BipedRenderExtensions;
+import org.jlortiz.playercollars.item.PawsItem;
 import org.joml.Quaternionf;
+
+import java.util.Arrays;
 
 import static org.jlortiz.playercollars.client.FootPawRenderer.makeUnenchantedItemStack;
 
 public class PawRenderer implements AccessoryRenderer {
-    private static void renderForArm(ItemStack stack, MatrixStack matrices, PlayerEntityModel model, World world, VertexConsumerProvider multiBufferSource, int light, boolean left) {
+    private static ItemStack makeTweakedItemStack(LivingEntityRenderState state, ItemStack stack) {
+        if (state instanceof BipedRenderExtensions ext
+                && ext.playerCollars$isCrawlingWithPaws()
+                && stack.getItem() instanceof PawsItem paws) {
+            int pawIndex = Arrays.asList(PlayerCollarsMod.PAWS_ITEMS).indexOf(paws);
+            if (pawIndex == -1) return makeUnenchantedItemStack(stack);
+            return new ItemStack(PlayerCollarsMod.FOOT_PAWS_ITEMS[pawIndex], stack.getCount());
+        }
+        return makeUnenchantedItemStack(stack);
+    }
+
+    private static void renderForArm(ItemStack stack, boolean isFootPaw, MatrixStack matrices, PlayerEntityModel model, World world, VertexConsumerProvider multiBufferSource, int light, boolean left) {
         matrices.push();
         AccessoryRenderer.transformToFace(matrices, left ? model.leftArm : model.rightArm, Side.BOTTOM);
-        matrices.multiply(new Quaternionf().rotateXYZ((float) Math.PI, (float) (left ? Math.PI : -Math.PI)/ 2, 0));
-        matrices.translate(0, -0.1875, -0.125);
-        matrices.scale(0.75f, 0.625f, model.thinArms ? 0.875f : 1.03125f);
+        if (isFootPaw) {
+            matrices.multiply(new Quaternionf().rotateXYZ((float) -Math.PI / 2, 0, 0));
+            matrices.translate(-0.015625f, -0.015625f, 0);
+            matrices.scale(0.609375f, 0.78125f, model.thinArms ? 0.875f : 1.03125f);
+        } else {
+            matrices.multiply(new Quaternionf().rotateXYZ((float) Math.PI, (float) (left ? Math.PI : -Math.PI) / 2, 0));
+            matrices.translate(0, -0.1875, -0.125);
+            matrices.scale(0.75f, 0.625f, model.thinArms ? 0.875f : 1.03125f);
+        }
         MinecraftClient.getInstance().getItemRenderer().renderItem(stack, ModelTransformationMode.FIXED, light, OverlayTexture.DEFAULT_UV, matrices, multiBufferSource, world, 0);
         matrices.pop();
     }
@@ -35,10 +57,17 @@ public class PawRenderer implements AccessoryRenderer {
         boolean left = arm == Arm.LEFT;
         matrices.push();
         AccessoryRenderer.transformToFace(matrices, left ? model.leftArm : model.rightArm, Side.BOTTOM);
-        matrices.multiply(new Quaternionf().rotateXYZ((float) Math.PI, 0, 0));
-        matrices.translate(left ? 0 : 0.015625, -0.1875, left ? -0.135 : -0.14);
-        matrices.scale(model.thinArms ? 0.59375f : 0.75f, 0.75f, 1.03125f);
-        ItemStack is = makeUnenchantedItemStack(stack);
+        ItemStack is = makeTweakedItemStack(renderState, stack);
+        boolean isFootPaw = stack.getItem() != is.getItem();
+        if (isFootPaw) {
+            matrices.multiply(new Quaternionf().rotateXYZ((float) -Math.PI / 2, 0, 0));
+            matrices.translate(-0.0125f, -0.03125f, 0.125f);
+            matrices.scale(model.thinArms ? 0.59375f : 0.75f, 0.7125f, 0.721875f);
+        } else {
+            matrices.multiply(new Quaternionf().rotateXYZ((float) Math.PI, 0, 0));
+            matrices.translate(left ? 0 : 0.015625, -0.1875, left ? -0.135 : -0.14);
+            matrices.scale(model.thinArms ? 0.59375f : 0.75f, 0.75f, 1.03125f);
+        }
         MinecraftClient.getInstance().getItemRenderer().renderItem(is, ModelTransformationMode.FIXED, light, OverlayTexture.DEFAULT_UV, matrices, multiBufferSource, reference.entity().getWorld(), 0);
         matrices.pop();
     }
@@ -47,8 +76,9 @@ public class PawRenderer implements AccessoryRenderer {
     public <S extends LivingEntityRenderState> void render(ItemStack stack, SlotReference reference, MatrixStack matrices, EntityModel<S> entityModel, S renderState, VertexConsumerProvider multiBufferSource, int light, float partialTicks) {
         if (!(entityModel instanceof PlayerEntityModel model)) return;
 
-        ItemStack is = makeUnenchantedItemStack(stack);
-        renderForArm(is, matrices, model, reference.entity().getWorld(), multiBufferSource, light, false);
-        renderForArm(is, matrices, model, reference.entity().getWorld(), multiBufferSource, light, true);
+        ItemStack is = makeTweakedItemStack(renderState, stack);
+        boolean isFootPaw = stack.getItem() != is.getItem();
+        renderForArm(is, isFootPaw, matrices, model, reference.entity().getWorld(), multiBufferSource, light, false);
+        renderForArm(is, isFootPaw, matrices, model, reference.entity().getWorld(), multiBufferSource, light, true);
     }
 }
