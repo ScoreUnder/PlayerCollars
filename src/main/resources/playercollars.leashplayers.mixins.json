@@ -12,7 +12,6 @@
     "MixinLeashKnotEntity",
     "MixinPlayerEntity",
     "MixinServerPlayerEntity",
-    "MixinTridentItem",
-    "MixinTurtleEntity"
+    "MixinTridentItem"
   ]
 }

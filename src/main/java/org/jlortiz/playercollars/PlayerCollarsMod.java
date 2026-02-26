@@ -62,6 +62,7 @@ import org.jlortiz.playercollars.event.PawsEventHandler;
 import org.jlortiz.playercollars.item.*;
 import org.jlortiz.playercollars.leash.LeashImpl;
 import org.jlortiz.playercollars.leash.LeashProxyEntity;
+import org.jlortiz.playercollars.leash.LeashServerSideInit;
 import org.jlortiz.playercollars.network.*;
 
 import java.util.*;
@@ -358,6 +359,7 @@ public class PlayerCollarsMod implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
+		LeashServerSideInit.initialize();
 		Registry.register(Registries.ENCHANTMENT_ENTITY_EFFECT_TYPE, Identifier.of(MOD_ID, "regeneration_effect"), RegenerationEnchantmentEffect.CODEC);
 		Registry.register(Registries.RECIPE_SERIALIZER, Identifier.of(MOD_ID, "owner_transfer"), OwnershipCraftingRecipe.Serializer.INSTANCE);
 		PayloadTypeRegistry.playC2S().register(PacketUpdateCollar.ID, PacketUpdateCollar.CODEC);

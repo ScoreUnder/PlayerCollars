@@ -12,6 +12,7 @@ import net.minecraft.item.Item;
 import org.jlortiz.playercollars.PlayerCollarsMod;
 import org.jlortiz.playercollars.client.screen.PawsConfigScreen;
 import org.jlortiz.playercollars.item.FootPawsItem;
+import org.jlortiz.playercollars.leash.LeashClientSideInit;
 import org.jlortiz.playercollars.network.PacketLookAtLerped;
 import org.jlortiz.playercollars.network.PacketUpdatePawsConfig;
 
@@ -19,6 +20,7 @@ import org.jlortiz.playercollars.network.PacketUpdatePawsConfig;
 public class RegisterClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
+        LeashClientSideInit.initialize();
         AccessoriesRendererRegistry.registerRenderer(PlayerCollarsMod.COLLAR_ITEM, CollarRenderer::new);
         AccessoriesRendererRegistry.registerRenderer(PlayerCollarsMod.TAGLESS_COLLAR_ITEM, CollarRenderer::new);
         for (FootPawsItem p : PlayerCollarsMod.PAWS_ITEMS) {

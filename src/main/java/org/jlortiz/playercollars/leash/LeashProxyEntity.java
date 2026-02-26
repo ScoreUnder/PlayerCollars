@@ -1,23 +1,50 @@
 package org.jlortiz.playercollars.leash;
 
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.*;
+import net.minecraft.entity.data.DataTracker;
+import net.minecraft.entity.data.TrackedData;
+import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.passive.TurtleEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.scoreboard.ServerScoreboard;
-import net.minecraft.scoreboard.Team;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathConstants;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 import org.jlortiz.playercollars.PlayerCollarsMod;
 import org.joml.Math;
 
 import java.util.Objects;
+import java.util.OptionalInt;
+
+import static org.jlortiz.playercollars.leash.LeashServerSideInit.LEASH_PROXY_ENTITY_TYPE;
 
 public final class LeashProxyEntity extends TurtleEntity {
-    private final LivingEntity target;
+    private static final TrackedData<OptionalInt> TRACKED_LEASH_TARGET =
+            DataTracker.registerData(LeashProxyEntity.class, TrackedDataHandlerRegistry.OPTIONAL_INT);
+
+    private LivingEntity target;
     private static final EntityDimensions DIMENSIONS = EntityDimensions.fixed(MathConstants.EPSILON, MathConstants.EPSILON);
+
+    public LeashProxyEntity(EntityType<? extends LeashProxyEntity> type, World world) {
+        super(type, world);
+        setHealth(1.0F);
+        setInvulnerable(true);
+        setBaby(true);
+        setInvisible(true);
+        noClip = true;
+        this.target = this;  // better than nothing? lmao
+    }
+
+    public LeashProxyEntity(@NotNull LivingEntity target) {
+        this(LEASH_PROXY_ENTITY_TYPE, target.getWorld());
+
+        this.target = target;
+        setRealLeashTargetId(OptionalInt.of(target.getId()));
+
+        proxyUpdate();
+    }
 
     private boolean proxyUpdate() {
         if (proxyIsRemoved()) return false;
@@ -26,6 +53,18 @@ public final class LeashProxyEntity extends TurtleEntity {
         if (target.getWorld() != getWorld() || !target.isAlive()) return true;
 
         Vec3d posActual = this.getPos();
+        Vec3d posTarget = getTargetPos(target);
+
+        if (!Objects.equals(posActual, posTarget)) {
+            setRotation(0.0F, 0.0F);
+            setPos(posTarget.x, posTarget.y, posTarget.z);
+            setBoundingBox(DIMENSIONS.getBoxAt(target.getPos()));
+        }
+
+        return false;
+    }
+
+    public static Vec3d getTargetPos(LivingEntity target) {
         Vec3d posTarget = PlayerCollarsMod.isWalkingOnAllFours(target)
                 ? Vec3d.fromPolar(0, target.getBodyYaw()).multiply(0.35).add(0f, 0.2f + 0.375f, -0.1f)
                 : switch (target.getPose()) {
@@ -39,14 +78,7 @@ public final class LeashProxyEntity extends TurtleEntity {
                     default: yield new Vec3d(0.0D, 1.3D, -0.15D);
                 };
         posTarget = posTarget.multiply(target.getScale()).add(target.getPos());
-
-        if (!Objects.equals(posActual, posTarget)) {
-            setRotation(0.0F, 0.0F);
-            setPos(posTarget.x, posTarget.y, posTarget.z);
-            setBoundingBox(DIMENSIONS.getBoxAt(target.getPos()));
-        }
-
-        return false;
+        return posTarget;
     }
 
     @NotNull
@@ -56,9 +88,12 @@ public final class LeashProxyEntity extends TurtleEntity {
 
     @Override
     public void tick() {
-        if (this.getWorld().isClient) return;
-        if (proxyUpdate() && !proxyIsRemoved()) {
-            proxyRemove();
+        if (this.getWorld().isClient) {
+            clientSideSync();
+        } else {
+            if (proxyUpdate() && !proxyIsRemoved()) {
+                proxyRemove();
+            }
         }
     }
 
@@ -74,33 +109,24 @@ public final class LeashProxyEntity extends TurtleEntity {
     public void remove(RemovalReason reason) {
     }
 
-    public static final String TEAM_NAME = "leashplayersimpl";
+    @Override
+    public boolean collidesWithStateAtPos(BlockPos pos, BlockState state) {
+        return false;
+    }
 
-    public LeashProxyEntity(@NotNull LivingEntity target) {
-        super(EntityType.TURTLE, target.getWorld());
-        this.target = target;
+    @Override
+    public boolean collidesWith(Entity other) {
+        return false;
+    }
 
-        setHealth(1.0F);
-        setInvulnerable(true);
-        setBaby(true);
-        setInvisible(true);
-        noClip = true;
+    @Override
+    public boolean isCollidable() {
+        return false;
+    }
 
-        MinecraftServer server = getServer();
-        if (server != null) {
-            ServerScoreboard scoreboard = server.getScoreboard();
-
-            Team team = scoreboard.getTeam(TEAM_NAME);
-            if (team == null) {
-                team = scoreboard.addTeam(TEAM_NAME);
-            }
-            if (team.getCollisionRule() != Team.CollisionRule.NEVER) {
-                team.setCollisionRule(Team.CollisionRule.NEVER);
-            }
-
-            scoreboard.addScoreHolderToTeam(getNameForScoreboard(), team);
-        }
-        proxyUpdate();
+    @Override
+    public boolean isPushable() {
+        return false;
     }
 
     @Override
@@ -130,16 +156,55 @@ public final class LeashProxyEntity extends TurtleEntity {
     }
 
     @Override
-    public void writeCustomDataToNbt(NbtCompound nbt) {
-        super.writeCustomDataToNbt(nbt);
-        nbt.putString("Team", TEAM_NAME);
-    }
-
-    @Override
     public void pushAwayFrom(Entity entity) {
     }
 
     @Override
     public void onPlayerCollision(PlayerEntity player) {
+    }
+
+    @Override
+    public void initDataTracker(DataTracker.Builder builder) {
+        super.initDataTracker(builder);
+        builder.add(TRACKED_LEASH_TARGET, OptionalInt.empty());
+    }
+
+    private void clientSideSync() {
+        // On client-side, we should update the entity position even if the server hasn't asked us.
+        // this prevents the leash from visibly lagging.
+        if (target == null || target.isRemoved()) return;
+
+        var targetPos = LeashProxyEntity.getTargetPos(target);
+        setPos(targetPos.x, targetPos.y, targetPos.z);
+    }
+
+    private void refreshTarget() {
+        var leashTarget = dataTracker.get(TRACKED_LEASH_TARGET);
+        if (leashTarget.isEmpty()) {
+            this.target = null;
+            return;
+        }
+
+        var leashTargetEntity = getWorld().getEntityById(leashTarget.getAsInt());
+        if (!(leashTargetEntity instanceof LivingEntity newTarget)) {
+            this.target = null;
+            return;
+        }
+
+        this.target = newTarget;
+    }
+
+    @Override
+    public void onTrackedDataSet(TrackedData<?> data) {
+        if (TRACKED_LEASH_TARGET.equals(data) && getWorld().isClient) {
+            refreshTarget();
+        } else {
+            super.onTrackedDataSet(data);
+        }
+    }
+
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    public void setRealLeashTargetId(OptionalInt val) {
+        dataTracker.set(TRACKED_LEASH_TARGET, val);
     }
 }
