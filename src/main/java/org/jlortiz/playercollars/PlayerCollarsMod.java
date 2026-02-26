@@ -23,6 +23,7 @@ import net.minecraft.block.entity.BlockEntityType;
 import net.minecraft.block.piston.PistonBehavior;
 import net.minecraft.component.ComponentType;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityPose;
 import net.minecraft.entity.Leashable;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.ClampedEntityAttribute;
@@ -337,6 +338,18 @@ public class PlayerCollarsMod implements ModInitializer {
 			}
 		}
 		return null;
+	}
+
+	public static boolean shouldWalkOnAllFours(LivingEntity entity) {
+		return !getEquippedAccessories(entity, FOOT_PAWS_TAG).isEmpty();
+	}
+
+	public static boolean isWalkingOnAllFours(LivingEntity entity) {
+		return isWalkingOnAllFours(entity, entity.getPose());
+	}
+
+	public static boolean isWalkingOnAllFours(LivingEntity entity, EntityPose pose) {
+		return pose == EntityPose.SWIMMING && shouldWalkOnAllFours(entity);
 	}
 
 	public static double getFootPawsCrawlingSpeed() {

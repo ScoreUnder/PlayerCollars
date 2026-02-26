@@ -89,15 +89,10 @@ public abstract class PlayerEntityMixin extends LivingEntity {
     @ModifyArg(method="updatePose", at=@At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;setPose(Lnet/minecraft/entity/EntityPose;)V"))
     private EntityPose playercollars$forceCrawl(EntityPose entityPose) {
         if (!getAbilities().flying && (entityPose == EntityPose.CROUCHING || entityPose == EntityPose.STANDING)) {
-            if (hasFootPaws())
+            if (PlayerCollarsMod.shouldWalkOnAllFours(this))
                 return EntityPose.SWIMMING;
         }
         return entityPose;
-    }
-
-    @Unique
-    private boolean hasFootPaws() {
-        return !PlayerCollarsMod.getEquippedAccessories(this, PlayerCollarsMod.FOOT_PAWS_TAG).isEmpty();
     }
 
     @Inject(method = "getDisplayName", at = @At("HEAD"), cancellable = true)
@@ -110,7 +105,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
 
     @Inject(method = "getBaseDimensions", at = @At("HEAD"), cancellable = true)
     private void getBaseDimensions(EntityPose pose, CallbackInfoReturnable<EntityDimensions> cir) {
-        if (pose == EntityPose.SWIMMING && hasFootPaws()) {
+        if (PlayerCollarsMod.isWalkingOnAllFours(this, pose)) {
             cir.setReturnValue(CRAWLING_DIMENSIONS);
         }
     }

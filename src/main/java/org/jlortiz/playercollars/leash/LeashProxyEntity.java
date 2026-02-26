@@ -10,6 +10,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.MathConstants;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.NotNull;
+import org.jlortiz.playercollars.PlayerCollarsMod;
 import org.joml.Math;
 
 import java.util.Objects;
@@ -25,16 +26,18 @@ public final class LeashProxyEntity extends TurtleEntity {
         if (target.getWorld() != getWorld() || !target.isAlive()) return true;
 
         Vec3d posActual = this.getPos();
-        Vec3d posTarget = switch (target.getPose()) {
-            // No point in making cases for SPIN_ATTACK since leashed players can't use it
-            case CROUCHING: yield new Vec3d(0.0D, 1.1D, -0.15D);
-            case SWIMMING: yield Vec3d.fromPolar(0, target.getBodyYaw()).multiply(0.35).add(0, 0.2, -0.1);
-            case GLIDING: yield new Vec3d(0, 1.3, -0.15).rotateX(-Math.toRadians(90 + target.getPitch()))
-                    .rotateY(-Math.toRadians(target.getBodyYaw()));
-            case SLEEPING: if (target.getSleepingDirection() != null)
-                    yield new Vec3d(target.getSleepingDirection().getUnitVector().mul(-0.2f)).add(0, 0.1, -0.15);
-            default: yield new Vec3d(0.0D, 1.3D, -0.15D);
-        };
+        Vec3d posTarget = PlayerCollarsMod.isWalkingOnAllFours(target)
+                ? Vec3d.fromPolar(0, target.getBodyYaw()).multiply(0.35).add(0f, 0.2f + 0.375f, -0.1f)
+                : switch (target.getPose()) {
+                    // No point in making cases for SPIN_ATTACK since leashed players can't use it
+                    case CROUCHING: yield new Vec3d(0.0D, 1.1D, -0.15D);
+                    case SWIMMING: yield Vec3d.fromPolar(0, target.getBodyYaw()).multiply(0.35).add(0, 0.2, -0.1);
+                    case GLIDING: yield new Vec3d(0, 1.3, -0.15).rotateX(-Math.toRadians(90 + target.getPitch()))
+                            .rotateY(-Math.toRadians(target.getBodyYaw()));
+                    case SLEEPING: if (target.getSleepingDirection() != null)
+                            yield new Vec3d(target.getSleepingDirection().getUnitVector().mul(-0.2f)).add(0, 0.1, -0.15);
+                    default: yield new Vec3d(0.0D, 1.3D, -0.15D);
+                };
         posTarget = posTarget.multiply(target.getScale()).add(target.getPos());
 
         if (!Objects.equals(posActual, posTarget)) {
