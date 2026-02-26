@@ -3,7 +3,7 @@ package org.jlortiz.playercollars.leash;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
-import net.minecraft.entity.passive.TurtleEntity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
@@ -21,7 +21,8 @@ public class LeashServerSideInit {
                 Registries.ENTITY_TYPE,
                 registryKey,
                 EntityType.Builder.<LeashProxyEntity>create(LeashProxyEntity::new, SpawnGroup.MISC)
-                        .disableSummon().dropsNothing()
+                        .disableSummon().dropsNothing().disableSaving()
+                        .dimensions(0, 0)
                         .trackingTickInterval(20)
                         .maxTrackingRange(EntityType.PLAYER.getMaxTrackDistance()).build(registryKey));
     }
@@ -30,6 +31,6 @@ public class LeashServerSideInit {
     }
 
     public static void initialize() {
-        FabricDefaultAttributeRegistry.register(LEASH_PROXY_ENTITY_TYPE, TurtleEntity.createTurtleAttributes());
+        FabricDefaultAttributeRegistry.register(LEASH_PROXY_ENTITY_TYPE, MobEntity.createMobAttributes());
     }
 }

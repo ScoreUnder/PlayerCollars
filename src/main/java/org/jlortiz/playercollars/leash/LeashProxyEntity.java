@@ -1,11 +1,14 @@
 package org.jlortiz.playercollars.leash;
 
 import net.minecraft.block.BlockState;
-import net.minecraft.entity.*;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityDimensions;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.entity.passive.TurtleEntity;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathConstants;
@@ -20,7 +23,7 @@ import java.util.OptionalInt;
 
 import static org.jlortiz.playercollars.leash.LeashServerSideInit.LEASH_PROXY_ENTITY_TYPE;
 
-public final class LeashProxyEntity extends TurtleEntity {
+public final class LeashProxyEntity extends MobEntity {
     private static final TrackedData<OptionalInt> TRACKED_LEASH_TARGET =
             DataTracker.registerData(LeashProxyEntity.class, TrackedDataHandlerRegistry.OPTIONAL_INT);
 
