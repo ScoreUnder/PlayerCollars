@@ -70,9 +70,7 @@ public final class LeashProxyEntity extends Entity implements Leashable {
 
     @Override
     public void tick() {
-        if (this.getWorld().isClient) {
-            clientSideSync();
-        } else {
+        if (!this.getWorld().isClient) {
             if (proxyUpdate() && !proxyIsRemoved()) {
                 proxyRemove();
             }
@@ -175,15 +173,6 @@ public final class LeashProxyEntity extends Entity implements Leashable {
     @Override
     public void setLeashData(@Nullable Leashable.LeashData leashData) {
         this.leashData = leashData;
-    }
-
-    private void clientSideSync() {
-        // On client-side, we should update the entity position even if the server hasn't asked us.
-        // this prevents the leash from visibly lagging.
-        if (target == null || target.isRemoved()) return;
-
-        var targetPos = target.getPos();
-        setPos(targetPos.x, targetPos.y, targetPos.z);
     }
 
     private void refreshTarget() {
