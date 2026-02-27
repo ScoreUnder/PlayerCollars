@@ -1,43 +1,39 @@
 package org.jlortiz.playercollars.leash;
 
 import net.minecraft.block.BlockState;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityDimensions;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.*;
+import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
-import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathConstants;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
-import org.jlortiz.playercollars.PlayerCollarsMod;
-import org.joml.Math;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.OptionalInt;
 
 import static org.jlortiz.playercollars.leash.LeashServerSideInit.LEASH_PROXY_ENTITY_TYPE;
 
-public final class LeashProxyEntity extends MobEntity {
+public final class LeashProxyEntity extends Entity implements Leashable {
     private static final TrackedData<OptionalInt> TRACKED_LEASH_TARGET =
             DataTracker.registerData(LeashProxyEntity.class, TrackedDataHandlerRegistry.OPTIONAL_INT);
-
-    private LivingEntity target;
     private static final EntityDimensions DIMENSIONS = EntityDimensions.fixed(MathConstants.EPSILON, MathConstants.EPSILON);
+
+    private @Nullable LivingEntity target;
+    private @Nullable Leashable.LeashData leashData;
 
     public LeashProxyEntity(EntityType<? extends LeashProxyEntity> type, World world) {
         super(type, world);
-        setHealth(1.0F);
         setInvulnerable(true);
-        setBaby(true);
         setInvisible(true);
         noClip = true;
-        this.target = this;  // better than nothing? lmao
     }
 
     public LeashProxyEntity(@NotNull LivingEntity target) {
@@ -56,7 +52,7 @@ public final class LeashProxyEntity extends MobEntity {
         if (target.getWorld() != getWorld() || !target.isAlive()) return true;
 
         Vec3d posActual = this.getPos();
-        Vec3d posTarget = getTargetPos(target);
+        Vec3d posTarget = target.getPos();
 
         if (!Objects.equals(posActual, posTarget)) {
             setRotation(0.0F, 0.0F);
@@ -67,24 +63,7 @@ public final class LeashProxyEntity extends MobEntity {
         return false;
     }
 
-    public static Vec3d getTargetPos(LivingEntity target) {
-        Vec3d posTarget = PlayerCollarsMod.isWalkingOnAllFours(target)
-                ? Vec3d.fromPolar(0, target.getBodyYaw()).multiply(0.35).add(0f, 0.2f + 0.375f, -0.1f)
-                : switch (target.getPose()) {
-                    // No point in making cases for SPIN_ATTACK since leashed players can't use it
-                    case CROUCHING: yield new Vec3d(0.0D, 1.1D, -0.15D);
-                    case SWIMMING: yield Vec3d.fromPolar(0, target.getBodyYaw()).multiply(0.35).add(0, 0.2, -0.1);
-                    case GLIDING: yield new Vec3d(0, 1.3, -0.15).rotateX(-Math.toRadians(90 + target.getPitch()))
-                            .rotateY(-Math.toRadians(target.getBodyYaw()));
-                    case SLEEPING: if (target.getSleepingDirection() != null)
-                            yield new Vec3d(target.getSleepingDirection().getUnitVector().mul(-0.2f)).add(0, 0.1, -0.15);
-                    default: yield new Vec3d(0.0D, 1.3D, -0.15D);
-                };
-        posTarget = posTarget.multiply(target.getScale()).add(target.getPos());
-        return posTarget;
-    }
-
-    @NotNull
+    @Nullable  // Nullable on client, non-nullable on server
     public LivingEntity getLeashTarget() {
         return target;
     }
@@ -133,11 +112,6 @@ public final class LeashProxyEntity extends MobEntity {
     }
 
     @Override
-    public float getHealth() {
-        return 1.0F;
-    }
-
-    @Override
     public void detachLeash() {
     }
 
@@ -151,14 +125,6 @@ public final class LeashProxyEntity extends MobEntity {
     }
 
     @Override
-    protected void initGoals() {
-    }
-
-    @Override
-    protected void pushAway(Entity entity) {
-    }
-
-    @Override
     public void pushAwayFrom(Entity entity) {
     }
 
@@ -167,9 +133,48 @@ public final class LeashProxyEntity extends MobEntity {
     }
 
     @Override
+    public boolean damage(ServerWorld world, DamageSource source, float amount) {
+        return false;
+    }
+
+    @Override
+    public boolean canUsePortals(boolean allowVehicles) {
+        return false;
+    }
+
+    @Override
+    protected void readCustomDataFromNbt(NbtCompound nbt) {
+    }
+
+    @Override
+    protected void writeCustomDataToNbt(NbtCompound nbt) {
+    }
+
+    @Override
+    public boolean shouldRender(double cameraX, double cameraY, double cameraZ) {
+        return shouldRender(0.0);
+    }
+
+    @Override
+    public boolean shouldRender(double distance) {
+        Entity holder = getLeashHolder();
+        if (holder == null || target == null) return false;
+        return holder.shouldRender(distance) || target.shouldRender(distance);
+    }
+
+    @Override
     public void initDataTracker(DataTracker.Builder builder) {
-        super.initDataTracker(builder);
         builder.add(TRACKED_LEASH_TARGET, OptionalInt.empty());
+    }
+
+    @Override
+    public @Nullable LeashData getLeashData() {
+        return this.leashData;
+    }
+
+    @Override
+    public void setLeashData(@Nullable Leashable.LeashData leashData) {
+        this.leashData = leashData;
     }
 
     private void clientSideSync() {
@@ -177,7 +182,7 @@ public final class LeashProxyEntity extends MobEntity {
         // this prevents the leash from visibly lagging.
         if (target == null || target.isRemoved()) return;
 
-        var targetPos = LeashProxyEntity.getTargetPos(target);
+        var targetPos = target.getPos();
         setPos(targetPos.x, targetPos.y, targetPos.z);
     }
 

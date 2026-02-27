@@ -1,9 +1,7 @@
 package org.jlortiz.playercollars.leash;
 
-import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnGroup;
-import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
@@ -31,6 +29,6 @@ public class LeashServerSideInit {
     }
 
     public static void initialize() {
-        FabricDefaultAttributeRegistry.register(LEASH_PROXY_ENTITY_TYPE, MobEntity.createMobAttributes());
+        // just here to trigger <clinit>
     }
 }

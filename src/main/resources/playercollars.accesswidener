@@ -1,3 +1,5 @@
 accessWidener v2 named
 
 accessible field net/minecraft/client/render/entity/model/PlayerEntityModel thinArms Z
+accessible method net/minecraft/client/render/entity/PlayerEntityRenderer setupTransforms (Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;Lnet/minecraft/client/util/math/MatrixStack;FF)V
+accessible method net/minecraft/client/render/entity/PlayerEntityRenderer scale (Lnet/minecraft/client/render/entity/state/PlayerEntityRenderState;Lnet/minecraft/client/util/math/MatrixStack;)V

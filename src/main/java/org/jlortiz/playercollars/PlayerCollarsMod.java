@@ -245,7 +245,7 @@ public class PlayerCollarsMod implements ModInitializer {
 			for (Leashable l : list) {
 				if (!(l instanceof LeashProxyEntity le)) continue;
 				LivingEntity leashTarget = le.getLeashTarget();
-				if (doesPetBelongToSomeoneElse(leashTarget, player)) {
+				if (leashTarget != null && doesPetBelongToSomeoneElse(leashTarget, player)) {
 					player.sendMessage(Text.translatable("message.playercollars.no_break_fence_other", le.getLeashTarget().getName()).formatted(Formatting.RED), true);
 					return true;
 				}
