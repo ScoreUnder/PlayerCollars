@@ -105,9 +105,7 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
         }
 
         ActionResult result;
-        if (Math.abs(getY() - holder.getY()) > 6 + leashplayer$loyalty) {
-            result = ActionResult.FAIL;
-        } else if (leashplayers$movePacketCountAtLastTug != networkHandler.movePacketsCount) {
+        if (leashplayers$movePacketCountAtLastTug != networkHandler.movePacketsCount) {
             result = PlayerCollarsMod.pullPlayerTowards(asServerPlayer(), holder.getPos(),
                     leashplayer$loyalty, leashplayer$loyalty + 6, (x) -> Math.min(0.15 * (x - leashplayer$loyalty), 0.375) / x);
 
