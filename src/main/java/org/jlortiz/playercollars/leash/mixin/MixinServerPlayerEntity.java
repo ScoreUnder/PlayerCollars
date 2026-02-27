@@ -7,7 +7,6 @@ import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.decoration.LeashKnotEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.projectile.FireworkRocketEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
@@ -56,8 +55,6 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
     private int leashplayers$lastage;
     @Unique
     private double leashplayer$loyalty;
-    @Unique
-    private static final double FIREWORK_SEARCH_RADIUS = 128.0;
 
     public MixinServerPlayerEntity(World world, BlockPos pos, float yaw, GameProfile gameProfile) {
         super(world, pos, yaw, gameProfile);
@@ -120,7 +117,6 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
                 leashplayers$detach();
                 leashplayers$drop();
             } else {
-                // leashplayers$killFireworksOfPlayer(); // Ended up not using this
                 this.setVelocity(Vec3d.ZERO);
                 leashplayers$proxy.refreshPositionAndAngles(holder.getPos(), leashplayers$proxy.getYaw(), leashplayers$proxy.getPitch());
                 networkHandler.requestTeleport(holder.getX(), holder.getY(), holder.getZ(), getYaw(), getPitch());
@@ -132,23 +128,6 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
     private ServerPlayerEntity asServerPlayer() {
         // Doing this in another method seems to make static analysers a little happier
         return (ServerPlayerEntity) (Object) this;
-    }
-
-    @Unique
-    private void leashplayers$killFireworksOfPlayer() {
-        for (FireworkRocketEntity rocket : getServerWorld().getEntitiesByClass(
-                FireworkRocketEntity.class,
-                getBoundingBox().expand(FIREWORK_SEARCH_RADIUS),
-                rocket -> true
-        )) {
-            Entity owner = rocket.getOwner();
-            if (owner != null) {
-                UUID ownerUUID = owner.getUuid();
-                if (ownerUUID != null && ownerUUID.equals(this.getUuid())) {
-                    rocket.remove(Entity.RemovalReason.DISCARDED);
-                }
-            }
-        }
     }
 
     @Unique
