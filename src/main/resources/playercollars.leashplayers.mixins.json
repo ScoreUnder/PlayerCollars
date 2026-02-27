@@ -15,6 +15,7 @@
     "MixinTridentItem"
   ],
   "client": [
+    "MixinClientPlayerEntity",
     "MixinEntityRenderDispatcher",
     "MixinWorldRenderer"
   ]

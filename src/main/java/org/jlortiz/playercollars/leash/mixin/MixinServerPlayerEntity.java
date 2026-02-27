@@ -34,6 +34,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.Set;
 import java.util.UUID;
 
 @Mixin(ServerPlayerEntity.class)
@@ -55,8 +56,6 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
     private int leashplayers$lastage;
     @Unique
     private double leashplayer$loyalty;
-    @Unique
-    private int leashplayers$movePacketCountAtLastTug;
 
     public MixinServerPlayerEntity(World world, BlockPos pos, float yaw, GameProfile gameProfile) {
         super(world, pos, yaw, gameProfile);
@@ -104,17 +103,7 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
             return;
         }
 
-        ActionResult result;
-        if (leashplayers$movePacketCountAtLastTug != networkHandler.movePacketsCount) {
-            result = PlayerCollarsMod.pullPlayerTowards(asServerPlayer(), holder.getPos(),
-                    leashplayer$loyalty, leashplayer$loyalty + 6, (x) -> Math.min(0.15 * (x - leashplayer$loyalty), 0.375) / x);
-
-            // Make sure we don't add a shit-ton of velocity to the player before the client has had a chance to react
-            // e.g. if the player is experiencing a little temporary lag
-            leashplayers$movePacketCountAtLastTug = networkHandler.movePacketsCount;
-        } else {
-            result = ActionResult.PASS;
-        }
+        ActionResult result = PlayerCollarsMod.applyLeashPull(this, holder.getPos(), leashplayer$loyalty, leashplayer$loyalty + 6);
 
         if (result == ActionResult.FAIL) {
             if (getServerWorld().getGameRules().getBoolean(PlayerCollarsMod.PLAYER_LEASHES_BREAK_RULE)) {
@@ -126,12 +115,6 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
                 networkHandler.requestTeleport(holder.getX(), holder.getY(), holder.getZ(), getYaw(), getPitch());
             }
         }
-    }
-
-    @Unique
-    private ServerPlayerEntity asServerPlayer() {
-        // Doing this in another method seems to make static analysers a little happier
-        return (ServerPlayerEntity) (Object) this;
     }
 
     @Unique

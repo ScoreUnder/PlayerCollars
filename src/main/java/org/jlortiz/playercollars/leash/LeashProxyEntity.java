@@ -40,6 +40,9 @@ public final class LeashProxyEntity extends Entity implements Leashable {
         this(LEASH_PROXY_ENTITY_TYPE, target.getWorld());
 
         this.target = target;
+        if (target instanceof LeashHeldByProxyImpl impl) {
+            impl.playerCollars$setLeashProxy(this);
+        }
         setRealLeashTargetId(OptionalInt.of(target.getId()));
 
         proxyUpdate();

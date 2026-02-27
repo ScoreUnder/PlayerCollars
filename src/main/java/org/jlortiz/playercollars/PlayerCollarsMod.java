@@ -33,7 +33,6 @@ import net.minecraft.entity.decoration.LeashKnotEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.*;
 import net.minecraft.network.codec.PacketCodecs;
-import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
@@ -66,7 +65,6 @@ import org.jlortiz.playercollars.leash.LeashServerSideInit;
 import org.jlortiz.playercollars.network.*;
 
 import java.util.*;
-import java.util.function.UnaryOperator;
 
 public class PlayerCollarsMod implements ModInitializer {
 	public static final String MOD_ID = "playercollars";
@@ -224,7 +222,7 @@ public class PlayerCollarsMod implements ModInitializer {
 		return null;
 	}
 
-	public static ActionResult pullPlayerTowards(ServerPlayerEntity plr, Vec3d towards, double minDist, double maxDist, UnaryOperator<Double> getFactor) {
+	public static ActionResult applyLeashPull(LivingEntity plr, Vec3d towards, double minDist, double maxDist) {
 		Vec3d vecTo = towards.subtract(plr.getPos());
 		double distance = vecTo.length();
 		if (distance < minDist) return ActionResult.PASS;
@@ -232,17 +230,28 @@ public class PlayerCollarsMod implements ModInitializer {
 
 		if (plr.isSleeping()) return ActionResult.PASS;
 
-		Vec3d extraVelocity = vecTo.multiply(Math.abs(getFactor.apply(distance)));
-		// Note: the following condition intentionally includes negative Y velocity
+		double distanceFactor = Math.abs(Math.min(0.15 * (distance - minDist), 0.375) / distance);
+		Vec3d extraVelocity = vecTo.multiply(distanceFactor);
+		// Don't pull the player off their feet with tiny Y velocities
 		if (plr.isOnGround() && extraVelocity.getY() < MIN_TUG_Y_VELOCITY) {
 			double tugStrength = extraVelocity.length();
 			if (extraVelocity.getX() == 0 && extraVelocity.getZ() == 0) return ActionResult.PASS;
 			extraVelocity = new Vec3d(extraVelocity.getX(), 0, extraVelocity.getZ()).normalize().multiply(tugStrength);
 		}
 
-		plr.addVelocity(extraVelocity);
-		plr.networkHandler.sendPacket(new EntityVelocityUpdateS2CPacket(plr));
-		plr.velocityDirty = false;
+		Vec3d oldVelocity = plr.getVelocity();
+		Vec3d newVelocity = extraVelocity.add(oldVelocity);
+		double maxSpeed = distance * distanceFactor * 2;
+		double oldSpeed = oldVelocity.length();
+		// Don't let the speed build too high
+		if (oldSpeed > maxSpeed) {
+			// This effectively just turns their old velocity slightly closer to the leash holder's direction
+			// without speeding them up
+			newVelocity = newVelocity.normalize().multiply(oldSpeed);
+		}
+
+		plr.setVelocity(newVelocity);
+		plr.velocityDirty = true;
 		return ActionResult.SUCCESS;
 	}
 
