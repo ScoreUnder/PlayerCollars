@@ -55,6 +55,8 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
     private int leashplayers$lastage;
     @Unique
     private double leashplayer$loyalty;
+    @Unique
+    private int leashplayers$movePacketCountAtLastTug;
 
     public MixinServerPlayerEntity(World world, BlockPos pos, float yaw, GameProfile gameProfile) {
         super(world, pos, yaw, gameProfile);
@@ -105,11 +107,17 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
         ActionResult result;
         if (Math.abs(getY() - holder.getY()) > 6 + leashplayer$loyalty) {
             result = ActionResult.FAIL;
-        } else {
+        } else if (leashplayers$movePacketCountAtLastTug != networkHandler.movePacketsCount) {
             // Don't pull on the Y axis - it'll make the unfortunate player fly all over the place
             Vec3d pos = new Vec3d(holder.getX(), getY(), holder.getZ());
             result = PlayerCollarsMod.pullPlayerTowards(asServerPlayer(), pos,
                     leashplayer$loyalty, leashplayer$loyalty + 6, (x) -> Math.min(0.15 * (x - leashplayer$loyalty), 0.375) / x);
+
+            // Make sure we don't add a shit-ton of velocity to the player before the client has had a chance to react
+            // e.g. if the player is experiencing a little temporary lag
+            leashplayers$movePacketCountAtLastTug = networkHandler.movePacketsCount;
+        } else {
+            result = ActionResult.PASS;
         }
 
         if (result == ActionResult.FAIL) {
