@@ -9,13 +9,21 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.world.World;
 import org.jlortiz.playercollars.leash.LeashImpl;
+import org.jlortiz.playercollars.leash.LeashProxyEntity;
+import org.jlortiz.playercollars.leash.LeashHeldByProxyImpl;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.lang.ref.WeakReference;
+
 @Mixin(value = PlayerEntity.class, priority = 500)
-public abstract class MixinPlayerEntity extends LivingEntity {
+public abstract class MixinPlayerEntity extends LivingEntity implements LeashHeldByProxyImpl {
+    @Unique
+    private WeakReference<LeashProxyEntity> leashProxyEntity = null;
+
     protected MixinPlayerEntity(EntityType<? extends LivingEntity> entityType, World world) {
         super(entityType, world);
     }
@@ -28,5 +36,15 @@ public abstract class MixinPlayerEntity extends LivingEntity {
             info.setReturnValue(impl.leashplayers$interact(player, hand));
             info.cancel();
         }
+    }
+
+    @Override
+    public void playerCollars$setLeashProxy(LeashProxyEntity value) {
+        leashProxyEntity = new WeakReference<>(value);
+    }
+
+    @Override
+    public LeashProxyEntity playerCollars$getLeashProxy() {
+        return leashProxyEntity == null ? null : leashProxyEntity.get();
     }
 }

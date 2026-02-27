@@ -1,5 +1,6 @@
 package org.jlortiz.playercollars.leash;
 
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.Frustum;
 import net.minecraft.client.render.entity.EntityRenderer;
@@ -48,12 +49,18 @@ class LeashProxyEntityRenderer extends EntityRenderer<LeashProxyEntity, EntityRe
         EntityRenderState.LeashData leashData = state.leashData;
         Entity leashTarget = entity.getLeashTarget();
         if (leashData != null & leashTarget != null) {
-            if (leashTarget == dispatcher.camera.getFocusedEntity() && !dispatcher.camera.isThirdPerson()) {
+            if (leashTarget == dispatcher.camera.getFocusedEntity() && canRenderFirstPerson()) {
                 updateLeashOffsetInFirstPerson(entity, leashData, tickDelta);
             } else {
                 updateLeashOffset(entity, leashTarget, leashData, tickDelta);
             }
         }
+    }
+
+    private boolean canRenderFirstPerson() {
+        if (dispatcher.camera.isThirdPerson()) return false;
+        if (!(MinecraftClient.getInstance().worldRenderer instanceof WorldRenderActiveImpl wrImpl)) return true;
+        return wrImpl.playerCollars$isRenderingWorld();
     }
 
     private void updateLeashOffsetInFirstPerson(@NotNull LeashProxyEntity me, @NotNull EntityRenderState.LeashData leashData, float tickDelta) {

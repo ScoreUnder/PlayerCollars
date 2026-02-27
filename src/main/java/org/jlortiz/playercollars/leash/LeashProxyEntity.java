@@ -189,6 +189,9 @@ public final class LeashProxyEntity extends Entity implements Leashable {
         }
 
         this.target = newTarget;
+        if (target instanceof LeashHeldByProxyImpl impl) {
+            impl.playerCollars$setLeashProxy(this);
+        }
     }
 
     @Override
