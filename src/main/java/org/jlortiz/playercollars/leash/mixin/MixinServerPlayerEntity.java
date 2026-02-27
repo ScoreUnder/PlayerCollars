@@ -111,7 +111,7 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
         } else {
             // Don't pull on the Y axis - it'll make the unfortunate player fly all over the place
             Vec3d pos = new Vec3d(holder.getX(), getY(), holder.getZ());
-            result = PlayerCollarsMod.pullPlayerTowards((ServerPlayerEntity) (Object) this, pos,
+            result = PlayerCollarsMod.pullPlayerTowards(asServerPlayer(), pos,
                     leashplayer$loyalty, leashplayer$loyalty + 6, (x) -> Math.min(0.15 * (x - leashplayer$loyalty), 0.375) / x);
         }
 
@@ -126,6 +126,12 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
                 networkHandler.requestTeleport(holder.getX(), holder.getY(), holder.getZ(), getYaw(), getPitch());
             }
         }
+    }
+
+    @Unique
+    private ServerPlayerEntity asServerPlayer() {
+        // Doing this in another method seems to make static analysers a little happier
+        return (ServerPlayerEntity) (Object) this;
     }
 
     @Unique
