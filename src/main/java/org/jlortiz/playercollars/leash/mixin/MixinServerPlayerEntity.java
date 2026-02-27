@@ -108,9 +108,7 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
         if (Math.abs(getY() - holder.getY()) > 6 + leashplayer$loyalty) {
             result = ActionResult.FAIL;
         } else if (leashplayers$movePacketCountAtLastTug != networkHandler.movePacketsCount) {
-            // Don't pull on the Y axis - it'll make the unfortunate player fly all over the place
-            Vec3d pos = new Vec3d(holder.getX(), getY(), holder.getZ());
-            result = PlayerCollarsMod.pullPlayerTowards(asServerPlayer(), pos,
+            result = PlayerCollarsMod.pullPlayerTowards(asServerPlayer(), holder.getPos(),
                     leashplayer$loyalty, leashplayer$loyalty + 6, (x) -> Math.min(0.15 * (x - leashplayer$loyalty), 0.375) / x);
 
             // Make sure we don't add a shit-ton of velocity to the player before the client has had a chance to react

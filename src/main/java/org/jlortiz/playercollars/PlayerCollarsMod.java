@@ -170,6 +170,7 @@ public class PlayerCollarsMod implements ModInitializer {
 	public static final ExtendedScreenHandlerType<PawsConfigScreenHandler<Item>, PawsPermissionData<Item>> PAWS_ITEM_CONFIG_SCREEN_HANDLER = new ExtendedScreenHandlerType<>(
 			PawsConfigScreenHandler.PawsItemConfigScreenHandler::new, PacketCodecs.codec(PAWS_ITEM_PERMISSION_CODEC)
 	);
+	public static final double MIN_TUG_Y_VELOCITY = 0.2;
 
     static {
         for (DyeColor c : DyeColor.values()) {
@@ -231,7 +232,15 @@ public class PlayerCollarsMod implements ModInitializer {
 
 		if (plr.isSleeping()) return ActionResult.PASS;
 
-		plr.addVelocity(vecTo.multiply(Math.abs(getFactor.apply(distance))));
+		Vec3d extraVelocity = vecTo.multiply(Math.abs(getFactor.apply(distance)));
+		// Note: the following condition intentionally includes negative Y velocity
+		if (plr.isOnGround() && extraVelocity.getY() < MIN_TUG_Y_VELOCITY) {
+			double tugStrength = extraVelocity.length();
+			if (extraVelocity.getX() == 0 && extraVelocity.getZ() == 0) return ActionResult.PASS;
+			extraVelocity = new Vec3d(extraVelocity.getX(), 0, extraVelocity.getZ()).normalize().multiply(tugStrength);
+		}
+
+		plr.addVelocity(extraVelocity);
 		plr.networkHandler.sendPacket(new EntityVelocityUpdateS2CPacket(plr));
 		plr.velocityDirty = false;
 		return ActionResult.SUCCESS;
