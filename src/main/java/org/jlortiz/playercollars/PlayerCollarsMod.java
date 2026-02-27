@@ -230,17 +230,19 @@ public class PlayerCollarsMod implements ModInitializer {
 
 		if (plr.isSleeping()) return ActionResult.PASS;
 
+		Entity rootVehicle = plr.getRootVehicle();
+
 		double distanceFromPull = distance - minDist;
 		double pullSpeed = Math.min(0.003 + 0.05 * distanceFromPull + 0.03 * distanceFromPull * distanceFromPull, 1);
 		Vec3d extraVelocity = vecTo.multiply(pullSpeed / distance);
 		// Don't pull the player off their feet with tiny Y velocities
-		if (plr.isOnGround() && extraVelocity.getY() < MIN_TUG_Y_VELOCITY) {
+		if (rootVehicle.isOnGround() && extraVelocity.getY() < MIN_TUG_Y_VELOCITY) {
 			double tugStrength = extraVelocity.length();
 			if (extraVelocity.getX() == 0 && extraVelocity.getZ() == 0) return ActionResult.PASS;
 			extraVelocity = new Vec3d(extraVelocity.getX(), 0, extraVelocity.getZ()).normalize().multiply(tugStrength);
 		}
 
-		Vec3d oldVelocity = plr.getVelocity();
+		Vec3d oldVelocity = rootVehicle.getVelocity();
 		Vec3d newVelocity = extraVelocity.add(oldVelocity);
 		double maxSpeed = pullSpeed * 2;
 		double oldSpeed = oldVelocity.length();
@@ -252,8 +254,8 @@ public class PlayerCollarsMod implements ModInitializer {
 			newVelocity = newVelocity.normalize().multiply(oldSpeed);
 		}
 
-		plr.setVelocity(newVelocity);
-		plr.velocityDirty = true;
+		rootVehicle.setVelocity(newVelocity);
+		rootVehicle.velocityDirty = true;
 		return ActionResult.SUCCESS;
 	}
 
