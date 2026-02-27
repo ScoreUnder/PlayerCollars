@@ -167,7 +167,7 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
 
     @Unique
     private void leashplayers$drop() {
-        dropItem(new ItemStack(Items.LEAD), false, true);
+        dropItem(getServerWorld(), Items.LEAD);
     }
 
     @Inject(method = "tick()V", at = @At("TAIL"))
