@@ -4,7 +4,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.block.*;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemPlacementContext;
@@ -91,15 +91,25 @@ public class InvisibleFenceBlock extends FenceBlock {
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
         if (context instanceof EntityShapeContext e) {
-            if (state.get(POWERED) && e.getEntity() instanceof LivingEntity livingEntity) {
-                return PlayerCollarsMod.isPet(livingEntity) ? super.getCollisionShape(state, world, pos, context) : VoxelShapes.empty();
-            }
+            Entity entity = e.getEntity();
             // Vertical collision is cached using EntityShapeContext.ABSENT.
             // This will be re-checked if something actually lands on the fence, so this is safe for players.
             // It can cause unusual behaviour if something tries to pathfind through it, so that is left disabled.
-            if (e.getEntity() == null) return super.getCollisionShape(state, world, pos, context);
+            if (entity == null) return super.getCollisionShape(state, world, pos, context);
+
+            if (state.get(POWERED) && isPetOrPetsVehicle(entity)) {
+                return super.getCollisionShape(state, world, pos, context);
+            }
         }
         return VoxelShapes.empty();
+    }
+
+    private boolean isPetOrPetsVehicle(Entity entity) {
+        if (PlayerCollarsMod.entityIsPet(entity)) return true;
+        for (Entity passenger : entity.getPassengersDeep()) {
+            if (PlayerCollarsMod.entityIsPet(passenger)) return true;
+        }
+        return false;
     }
 
     @Override
@@ -110,8 +120,8 @@ public class InvisibleFenceBlock extends FenceBlock {
 
     @Override
     protected VoxelShape getOutlineShape(BlockState state, BlockView world, BlockPos pos, ShapeContext context) {
-        if (context instanceof EntityShapeContext e && e.getEntity() instanceof LivingEntity livingEntity) {
-            if (PlayerCollarsMod.isPet(livingEntity)) return VoxelShapes.empty();
+        if (context instanceof EntityShapeContext e && PlayerCollarsMod.entityIsPet(e.getEntity())) {
+            return VoxelShapes.empty();
         }
         return super.getOutlineShape(state, world, pos, context);
     }

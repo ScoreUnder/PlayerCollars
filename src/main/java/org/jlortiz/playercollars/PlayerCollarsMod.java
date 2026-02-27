@@ -312,6 +312,10 @@ public class PlayerCollarsMod implements ModInitializer {
 		return !getEquippedCollars(entity).isEmpty();
 	}
 
+	public static boolean entityIsPet(@Nullable Entity entity) {
+		return entity instanceof LivingEntity livingEntity && isPet(livingEntity);
+	}
+
 	/**
 	 * Check what level of ownership a given potential owner has over the player.
 	 */
