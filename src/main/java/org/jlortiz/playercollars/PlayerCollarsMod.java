@@ -230,8 +230,9 @@ public class PlayerCollarsMod implements ModInitializer {
 
 		if (plr.isSleeping()) return ActionResult.PASS;
 
-		double distanceFactor = Math.abs(Math.min(0.15 * (distance - minDist), 0.375) / distance);
-		Vec3d extraVelocity = vecTo.multiply(distanceFactor);
+		double distanceFromPull = distance - minDist;
+		double pullSpeed = Math.min(0.003 + 0.05 * distanceFromPull + 0.03 * distanceFromPull * distanceFromPull, 1);
+		Vec3d extraVelocity = vecTo.multiply(pullSpeed / distance);
 		// Don't pull the player off their feet with tiny Y velocities
 		if (plr.isOnGround() && extraVelocity.getY() < MIN_TUG_Y_VELOCITY) {
 			double tugStrength = extraVelocity.length();
@@ -241,10 +242,11 @@ public class PlayerCollarsMod implements ModInitializer {
 
 		Vec3d oldVelocity = plr.getVelocity();
 		Vec3d newVelocity = extraVelocity.add(oldVelocity);
-		double maxSpeed = distance * distanceFactor * 2;
+		double maxSpeed = pullSpeed * 2;
 		double oldSpeed = oldVelocity.length();
+		double newSpeed = newVelocity.length();
 		// Don't let the speed build too high
-		if (oldSpeed > maxSpeed) {
+		if (newSpeed > oldSpeed && oldSpeed > maxSpeed) {
 			// This effectively just turns their old velocity slightly closer to the leash holder's direction
 			// without speeding them up
 			newVelocity = newVelocity.normalize().multiply(oldSpeed);
