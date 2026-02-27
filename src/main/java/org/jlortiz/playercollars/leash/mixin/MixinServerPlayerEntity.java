@@ -12,6 +12,7 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.network.packet.s2c.play.PositionFlag;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -21,8 +22,8 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Uuids;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.NotNull;
 import org.jlortiz.playercollars.PlayerCollarsMod;
 import org.jlortiz.playercollars.leash.LeashImpl;
 import org.jlortiz.playercollars.leash.LeashProxyEntity;
@@ -48,6 +49,9 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
     @Shadow public abstract ServerWorld getServerWorld();
 
     @Shadow public ServerPlayNetworkHandler networkHandler;
+
+    @Shadow public abstract boolean teleport(ServerWorld world, double destX, double destY, double destZ, Set<PositionFlag> flags, float yaw, float pitch, boolean resetCamera);
+
     @Unique
     private LeashProxyEntity leashplayers$proxy;
     @Unique
@@ -97,24 +101,30 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
     private void leashplayers$apply() {
         Entity holder = leashplayers$holder;
         if (holder == null) return;
-        if (holder.getWorld() != getWorld()) {
-            leashplayers$detach();
-            leashplayers$drop();
-            return;
-        }
 
-        ActionResult result = PlayerCollarsMod.applyLeashPull(this, holder.getPos(), leashplayer$loyalty, leashplayer$loyalty + 6);
+        ActionResult result;
+        if (holder.getWorld() != getWorld()) {
+            result = ActionResult.FAIL;
+        } else {
+            result = PlayerCollarsMod.applyLeashPull(this, holder.getPos(), leashplayer$loyalty, leashplayer$loyalty + 6);
+        }
 
         if (result == ActionResult.FAIL) {
-            if (getServerWorld().getGameRules().getBoolean(PlayerCollarsMod.PLAYER_LEASHES_BREAK_RULE)) {
+            if (mustTeleportToHolder(holder)) {
+                teleport((ServerWorld) holder.getWorld(), holder.getX(), holder.getY(), holder.getZ(), Set.of(), holder.getYaw(), getPitch(), true);
+            } else {
                 leashplayers$detach();
                 leashplayers$drop();
-            } else {
-                this.setVelocity(Vec3d.ZERO);
-                leashplayers$proxy.refreshPositionAndAngles(holder.getPos(), leashplayers$proxy.getYaw(), leashplayers$proxy.getPitch());
-                networkHandler.requestTeleport(holder.getX(), holder.getY(), holder.getZ(), getYaw(), getPitch());
             }
         }
+    }
+
+    @Unique
+    private boolean mustTeleportToHolder(@NotNull Entity holder) {
+        ServerWorld myWorld = getServerWorld();
+        if (!myWorld.getGameRules().getBoolean(PlayerCollarsMod.PLAYER_LEASHES_BREAK_RULE)) return true;
+        if (age == 0) return false;
+        return holder.getWorld() != myWorld;
     }
 
     @Unique

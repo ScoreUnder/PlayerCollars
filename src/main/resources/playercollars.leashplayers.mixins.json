@@ -10,6 +10,7 @@
   "mixins": [
     "MixinFireworkRocketItem",
     "MixinLeashKnotEntity",
+    "MixinLivingEntity",
     "MixinPlayerEntity",
     "MixinServerPlayerEntity",
     "MixinTridentItem"
