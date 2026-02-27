@@ -229,6 +229,8 @@ public class PlayerCollarsMod implements ModInitializer {
 		if (distance < minDist) return ActionResult.PASS;
 		if (distance > maxDist) return ActionResult.FAIL;
 
+		if (plr.isSleeping()) return ActionResult.PASS;
+
 		plr.addVelocity(vecTo.multiply(Math.abs(getFactor.apply(distance))));
 		plr.networkHandler.sendPacket(new EntityVelocityUpdateS2CPacket(plr));
 		plr.velocityDirty = false;
