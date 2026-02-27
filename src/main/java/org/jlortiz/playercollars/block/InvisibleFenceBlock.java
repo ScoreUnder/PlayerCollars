@@ -8,6 +8,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemStack;
 import net.minecraft.particle.DustParticleEffect;
 import net.minecraft.particle.ParticleUtil;
 import net.minecraft.registry.RegistryKey;
@@ -18,6 +19,7 @@ import net.minecraft.state.property.Properties;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -129,8 +131,17 @@ public class InvisibleFenceBlock extends FenceBlock {
     }
 
     @Override
+    protected ActionResult onUseWithItem(ItemStack stack, BlockState state, World world, BlockPos pos, PlayerEntity player, Hand hand, BlockHitResult hit) {
+        if (stack.getItem() == PlayerCollarsMod.INVISIBLE_FENCE_BLOCK_ITEM) {
+            return ActionResult.PASS;
+        } else {
+            return ActionResult.PASS_TO_DEFAULT_BLOCK_ACTION;
+        }
+    }
+
+    @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
-        if (world.isClient()) return ActionResult.PASS;
+        if (world.isClient()) return ActionResult.CONSUME;
         if (PlayerCollarsMod.isPet(player)) {
             player.sendMessage(Text.translatable("block.playercollars.invisible_fence.toggle_fail").formatted(Formatting.RED), true);
             return ActionResult.FAIL;
