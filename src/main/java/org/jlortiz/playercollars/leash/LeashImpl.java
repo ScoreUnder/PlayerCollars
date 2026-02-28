@@ -9,4 +9,6 @@ public interface LeashImpl {
     ActionResult leashplayers$interact(PlayerEntity plr, Hand hand);
 
     Entity leashplayers$getProxyLeashHolder();
+
+    double leashplayers$getMaxLeashLength();
 }

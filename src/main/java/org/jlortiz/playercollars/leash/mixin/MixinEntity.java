@@ -13,6 +13,7 @@ import net.minecraft.world.BlockStateRaycastContext;
 import net.minecraft.world.World;
 import org.jlortiz.playercollars.PlayerCollarsMod;
 import org.jlortiz.playercollars.block.InvisibleFenceBlock;
+import org.jlortiz.playercollars.leash.LeashImpl;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -36,7 +37,7 @@ public abstract class MixinEntity {
     private boolean canStartRidingEvenIfPet(boolean result, Entity entity, boolean force) {
         if (!result) return false;
         if (!PlayerCollarsMod.entityIsPet((Entity) (Object) this)) return true;
-        if (!playerCollars$findInvisibleFence(entity)) return true;
+        if (!playerCollars$findInvisibleFence(entity) && !playerCollars$isTooFarFromLeashHolder(entity)) return true;
         if (!world.isClient && (Object) this instanceof PlayerEntity pe) {
             pe.sendMessage(Text.translatable("message.playercollars.no_ride_entity"), true);
         }
@@ -72,5 +73,15 @@ public abstract class MixinEntity {
     @Unique
     private static boolean playerCollars$isInvisibleFence(BlockState bs) {
         return bs.getBlock() instanceof InvisibleFenceBlock;
+    }
+
+    @Unique
+    private boolean playerCollars$isTooFarFromLeashHolder(Entity to) {
+        if (!(this instanceof LeashImpl leash)) return false;
+        Entity leashHolder = leash.leashplayers$getProxyLeashHolder();
+        if (leashHolder == null) return false;
+
+        float newLeashLen = leashHolder.distanceTo(to);
+        return newLeashLen + to.getDimensions(to.getPose()).width() > leash.leashplayers$getMaxLeashLength();
     }
 }
