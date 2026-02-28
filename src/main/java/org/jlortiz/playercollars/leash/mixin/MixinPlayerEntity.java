@@ -45,6 +45,14 @@ public abstract class MixinPlayerEntity extends LivingEntity implements LeashHel
 
     @Override
     public LeashProxyEntity playerCollars$getLeashProxy() {
-        return playerCollars$leashProxyEntity == null ? null : playerCollars$leashProxyEntity.get();
+        WeakReference<LeashProxyEntity> ref = playerCollars$leashProxyEntity;
+        if (ref == null) return null;
+        LeashProxyEntity leashProxy = ref.get();
+        if (leashProxy == null) return null;
+        if (leashProxy.isRemoved()) {
+            ref.clear();
+            return null;
+        }
+        return leashProxy;
     }
 }
