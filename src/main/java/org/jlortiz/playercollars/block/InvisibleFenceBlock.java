@@ -104,7 +104,7 @@ public class InvisibleFenceBlock extends FenceBlock {
         return VoxelShapes.empty();
     }
 
-    private boolean isPetOrPetsVehicle(Entity entity) {
+    private static boolean isPetOrPetsVehicle(Entity entity) {
         if (PlayerCollarsMod.entityIsPet(entity)) return true;
         for (Entity passenger : entity.getPassengersDeep()) {
             if (PlayerCollarsMod.entityIsPet(passenger)) return true;
