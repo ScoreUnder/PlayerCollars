@@ -21,7 +21,7 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 
     @ModifyExpressionValue(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;getAttributeValue(Lnet/minecraft/registry/entry/RegistryEntry;)D"), allow = 1)
     private double getSneakingOrCrawlingSpeed(double original) {
-        if (PlayerCollarsMod.isWalkingOnAllFours(this))
+        if (!PlayerCollarsMod.isWalkingOnAllFours(this))
             return original;
         return PlayerCollarsMod.getFootPawsCrawlingSpeed();
     }
