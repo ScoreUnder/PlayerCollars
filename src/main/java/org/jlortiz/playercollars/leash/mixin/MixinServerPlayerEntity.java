@@ -48,8 +48,6 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
 
     @Shadow public abstract ServerWorld getServerWorld();
 
-    @Shadow public ServerPlayNetworkHandler networkHandler;
-
     @Shadow public abstract boolean teleport(ServerWorld world, double destX, double destY, double destZ, Set<PositionFlag> flags, float yaw, float pitch, boolean resetCamera);
 
     @Unique
