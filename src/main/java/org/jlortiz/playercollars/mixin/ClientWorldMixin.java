@@ -26,7 +26,7 @@ public class ClientWorldMixin {
             var player = this.client.player;
             if (player == null) return;
             Item item = player.getMainHandStack().getItem();
-            if (item == PlayerCollarsMod.INVISIBLE_FENCE_BLOCK_ITEM && shouldRender()) {
+            if (item == PlayerCollarsMod.INVISIBLE_FENCE_BLOCK_ITEM && playerCollars$shouldShowInvisibleFence()) {
                 cir.setReturnValue(((BlockItem)item).getBlock());
             }
         }
@@ -34,7 +34,7 @@ public class ClientWorldMixin {
 
     @Unique
     @Environment(EnvType.CLIENT)
-    private static boolean shouldRender() {
+    private static boolean playerCollars$shouldShowInvisibleFence() {
         var player = MinecraftClient.getInstance().player;
         if (player == null) return false;
         return !PlayerCollarsMod.isPet(player);

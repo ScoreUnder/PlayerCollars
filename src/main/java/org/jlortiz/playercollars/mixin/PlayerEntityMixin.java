@@ -34,7 +34,7 @@ import java.util.List;
 @Mixin(PlayerEntity.class)
 public abstract class PlayerEntityMixin extends LivingEntity {
     @Unique
-    private static final EntityDimensions CRAWLING_DIMENSIONS = EntityDimensions.changing(0.6f, 0.9f).withEyeHeight(0.7f);
+    private static final EntityDimensions playerCollars$CRAWLING_DIMENSIONS = EntityDimensions.changing(0.6f, 0.9f).withEyeHeight(0.7f);
 
     @Shadow @Final PlayerInventory inventory;
 
@@ -106,7 +106,7 @@ public abstract class PlayerEntityMixin extends LivingEntity {
     @Inject(method = "getBaseDimensions", at = @At("HEAD"), cancellable = true)
     private void getBaseDimensions(EntityPose pose, CallbackInfoReturnable<EntityDimensions> cir) {
         if (PlayerCollarsMod.isWalkingOnAllFours(this, pose)) {
-            cir.setReturnValue(CRAWLING_DIMENSIONS);
+            cir.setReturnValue(playerCollars$CRAWLING_DIMENSIONS);
         }
     }
 }

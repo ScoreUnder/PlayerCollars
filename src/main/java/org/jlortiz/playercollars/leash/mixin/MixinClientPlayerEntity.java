@@ -9,10 +9,8 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.math.Vec3d;
-import org.jetbrains.annotations.Nullable;
 import org.jlortiz.playercollars.PlayerCollarsMod;
 import org.jlortiz.playercollars.leash.LeashHeldByProxyImpl;
-import org.jlortiz.playercollars.leash.LeashProxyEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Environment(EnvType.CLIENT)
 public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity {
     @Unique
-    private boolean isLeashPullInevitable;
+    private boolean playerCollars$isLeashPullInevitable;
 
     private MixinClientPlayerEntity(ClientWorld world, GameProfile profile) {
         super(world, profile);
@@ -32,7 +30,7 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
 
     @Inject(method = "tick", at = @At("TAIL"))
     private void tickLeashedPlayer(CallbackInfo ci) {
-        isLeashPullInevitable = false;
+        playerCollars$isLeashPullInevitable = false;
         Entity holder = ((LeashHeldByProxyImpl) this).playerCollars$getRealLeashHolder();
         if (holder == null) return;
 
@@ -46,14 +44,14 @@ public abstract class MixinClientPlayerEntity extends AbstractClientPlayerEntity
         double xzDist = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
         if (xzDist == 0) return;
         double xzDotProduct = (newVelocity.getX() * deltaX + newVelocity.getZ() * deltaZ) / xzDist;
-        isLeashPullInevitable = xzDotProduct > getMovementSpeed();
+        playerCollars$isLeashPullInevitable = xzDotProduct > getMovementSpeed();
     }
 
     @Inject(method = "shouldAutoJump", at = @At("TAIL"), cancellable = true)
     private void forceAutoJumpWhenFarOnLeash(CallbackInfoReturnable<Boolean> cir) {
         if (cir.getReturnValueZ()) return;
         if (hasVehicle() || !isOnGround()) return;
-        if (isLeashPullInevitable) {
+        if (playerCollars$isLeashPullInevitable) {
             cir.setReturnValue(true);
         }
     }

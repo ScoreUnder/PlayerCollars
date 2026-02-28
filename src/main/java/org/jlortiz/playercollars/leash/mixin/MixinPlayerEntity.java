@@ -22,7 +22,7 @@ import java.lang.ref.WeakReference;
 @Mixin(value = PlayerEntity.class, priority = 500)
 public abstract class MixinPlayerEntity extends LivingEntity implements LeashHeldByProxyImpl {
     @Unique
-    private WeakReference<LeashProxyEntity> leashProxyEntity = null;
+    private WeakReference<LeashProxyEntity> playerCollars$leashProxyEntity = null;
 
     protected MixinPlayerEntity(EntityType<? extends LivingEntity> entityType, World world) {
         super(entityType, world);
@@ -40,11 +40,11 @@ public abstract class MixinPlayerEntity extends LivingEntity implements LeashHel
 
     @Override
     public void playerCollars$setLeashProxy(LeashProxyEntity value) {
-        leashProxyEntity = new WeakReference<>(value);
+        playerCollars$leashProxyEntity = new WeakReference<>(value);
     }
 
     @Override
     public LeashProxyEntity playerCollars$getLeashProxy() {
-        return leashProxyEntity == null ? null : leashProxyEntity.get();
+        return playerCollars$leashProxyEntity == null ? null : playerCollars$leashProxyEntity.get();
     }
 }

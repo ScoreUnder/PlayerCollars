@@ -19,20 +19,20 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Environment(EnvType.CLIENT)
 public abstract class MixinWorldRenderer implements WorldRenderActiveImpl {
     @Unique
-    private boolean renderingWorld;
+    private boolean playerCollars$renderingWorld;
 
     @Override
     public boolean playerCollars$isRenderingWorld() {
-        return renderingWorld;
+        return playerCollars$renderingWorld;
     }
 
     @Inject(method = "render", at = @At("HEAD"))
     private void renderStart(ObjectAllocator allocator, RenderTickCounter tickCounter, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, Matrix4f positionMatrix, Matrix4f projectionMatrix, CallbackInfo ci) {
-        renderingWorld = true;
+        playerCollars$renderingWorld = true;
     }
 
     @Inject(method = "render", at = @At("RETURN"))
     private void renderFinish(ObjectAllocator allocator, RenderTickCounter tickCounter, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, Matrix4f positionMatrix, Matrix4f projectionMatrix, CallbackInfo ci) {
-        renderingWorld = false;
+        playerCollars$renderingWorld = false;
     }
 }

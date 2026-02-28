@@ -9,13 +9,13 @@ import org.spongepowered.asm.mixin.Unique;
 
 @Mixin(BipedEntityRenderState.class) @Environment(EnvType.CLIENT)
 public abstract class BipedEntityRenderStateMixin implements BipedRenderExtensions {
-    @Unique private boolean isCrawlingWithPaws;
+    @Unique private boolean playerCollars$isCrawlingWithPaws;
 
     @Override public void playerCollars$setCrawlingWithPaws(boolean value) {
-        isCrawlingWithPaws = value;
+        playerCollars$isCrawlingWithPaws = value;
     }
 
     @Override public boolean playerCollars$isCrawlingWithPaws() {
-        return isCrawlingWithPaws;
+        return playerCollars$isCrawlingWithPaws;
     }
 }

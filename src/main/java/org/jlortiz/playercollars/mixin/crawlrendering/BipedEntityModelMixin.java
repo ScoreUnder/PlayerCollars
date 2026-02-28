@@ -30,12 +30,13 @@ public abstract class BipedEntityModelMixin<T extends BipedEntityRenderState> {
     @Inject(method = "setAngles(Lnet/minecraft/client/render/entity/state/BipedEntityRenderState;)V", at = @At(value = "FIELD", target = "Lnet/minecraft/client/render/entity/state/BipedEntityRenderState;preferredArm:Lnet/minecraft/util/Arm;", opcode = Opcodes.GETFIELD, ordinal = 0, shift = At.Shift.BY, by = -11), cancellable = true)
     private void setLimbAngles(T state, CallbackInfo ci) {
         if (state instanceof BipedRenderExtensions ext && ext.playerCollars$isCrawlingWithPaws()) {
-            setPetCrawlPose(state);
+            playerCollars$setPetCrawlPose(state);
             ci.cancel();
         }
     }
 
-    @Unique private void setPetCrawlPose(T state) {
+    @Unique
+    private void playerCollars$setPetCrawlPose(T state) {
         float amplitude = LIMB_AMPLITUDE_FACTOR * state.limbAmplitudeMultiplier;
         float frequency = state.limbFrequency * LIMB_SPEED_FACTOR;
         float limbPitch = MathHelper.cos(frequency) * amplitude;
@@ -43,20 +44,20 @@ public abstract class BipedEntityModelMixin<T extends BipedEntityRenderState> {
 
         if (!state.isUsingItem) {
             boolean isSwingingArm = state.handSwingProgress > 0.0F;
-            setPetCrawlArmPose(this.leftArm, this.rightArm, state.preferredArm, leaningPitch, isSwingingArm, limbPitch);
+            playerCollars$setPetCrawlArmPose(this.leftArm, this.rightArm, state.preferredArm, leaningPitch, isSwingingArm, limbPitch);
         }
 
-        setPetCrawlLegPose(this.leftLeg, this.rightLeg, leaningPitch, limbPitch);
+        playerCollars$setPetCrawlLegPose(this.leftLeg, this.rightLeg, leaningPitch, limbPitch);
     }
 
     @Unique
-    private static void setPetCrawlLegPose(ModelPart leftLeg, ModelPart rightLeg, float leaningPitch, float limbPitch) {
+    private static void playerCollars$setPetCrawlLegPose(ModelPart leftLeg, ModelPart rightLeg, float leaningPitch, float limbPitch) {
         leftLeg.pitch = MathHelper.lerp(leaningPitch, leftLeg.pitch, -PI / 2 - limbPitch);
         rightLeg.pitch = MathHelper.lerp(leaningPitch, rightLeg.pitch, -PI / 2 + limbPitch);
     }
 
     @Unique
-    private static void setPetCrawlArmPose(ModelPart leftArm, ModelPart rightArm, Arm preferredArm, float leaningPitch, boolean isSwingingArm, float limbPitch) {
+    private static void playerCollars$setPetCrawlArmPose(ModelPart leftArm, ModelPart rightArm, Arm preferredArm, float leaningPitch, boolean isSwingingArm, float limbPitch) {
         float rightSwingOffset = preferredArm == Arm.RIGHT && isSwingingArm ? 0.0F : leaningPitch;
         float leftSwingOffset = preferredArm == Arm.LEFT && isSwingingArm ? 0.0F : leaningPitch;
         leftArm.pitch = MathHelper.lerpAngleRadians(leftSwingOffset, leftArm.pitch, PI / 2 + limbPitch);

@@ -110,7 +110,7 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
         }
 
         if (result == ActionResult.FAIL) {
-            if (mustTeleportToHolder(holder)) {
+            if (playerCollars$mustTeleportToHolder(holder)) {
                 teleport((ServerWorld) holder.getWorld(), holder.getX(), holder.getY(), holder.getZ(), Set.of(), holder.getYaw(), getPitch(), true);
             } else {
                 leashplayers$detach();
@@ -120,7 +120,7 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
     }
 
     @Unique
-    private boolean mustTeleportToHolder(@NotNull Entity holder) {
+    private boolean playerCollars$mustTeleportToHolder(@NotNull Entity holder) {
         ServerWorld myWorld = getServerWorld();
         if (!myWorld.getGameRules().getBoolean(PlayerCollarsMod.PLAYER_LEASHES_BREAK_RULE)) return true;
         if (age == 0) return false;
