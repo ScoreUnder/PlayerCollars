@@ -12,9 +12,6 @@ import org.jlortiz.playercollars.PlayerCollarsMod;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
-import static org.jlortiz.playercollars.PlayerCollarsMod.PAWS_TAG;
-import static org.jlortiz.playercollars.PlayerCollarsMod.getEquippedAccessories;
-
 @Mixin(ClientPlayerEntity.class)
 @Environment(EnvType.CLIENT)
 public abstract class ClientPlayerEntityMixin extends PlayerEntity {
