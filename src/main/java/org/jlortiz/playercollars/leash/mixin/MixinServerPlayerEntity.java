@@ -14,7 +14,6 @@ import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.packet.s2c.play.PositionFlag;
 import net.minecraft.registry.tag.BlockTags;
-import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
@@ -22,6 +21,7 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Uuids;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.GlobalPos;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 import org.jlortiz.playercollars.PlayerCollarsMod;
@@ -44,12 +44,14 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
     private static final String playerCollars$LEASH_HOLDER_TAG = "playercollars:leash_holder";
 
     @Unique
-    private static final Codec<Either<UUID, BlockPos>> leashplayers$LEASH_HOLDER_CODEC = Codec.either(Uuids.CODEC, BlockPos.CODEC);
+    private static final Codec<Either<UUID, GlobalPos>> leashplayers$LEASH_HOLDER_CODEC = Codec.either(Uuids.CODEC, GlobalPos.CODEC);
 
     @Shadow public abstract ServerWorld getServerWorld();
 
     @Shadow public abstract boolean teleport(ServerWorld world, double destX, double destY, double destZ, Set<PositionFlag> flags, float yaw, float pitch, boolean resetCamera);
 
+    @Unique
+    private Either<UUID, GlobalPos> leashplayers$leashInfo;
     @Unique
     private LeashProxyEntity leashplayers$proxy;
     @Unique
@@ -65,55 +67,65 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
 
     @Unique
     private void leashplayers$update() {
-        if (
-                leashplayers$holder != null && (
-                        !leashplayers$holder.isAlive() || !isAlive() || !PlayerCollarsMod.isPet(this)
-                )
-        ) {
-            leashplayers$detach();
-            leashplayers$drop();
+        Entity holder = leashplayers$holder;
+        if (leashplayers$leashInfo != null) {
+            if (holder == null || holder.isRemoved()) {
+                leashplayers$killLeashProxy();
+                leashplayers$resolveLeashHolder(leashplayers$leashInfo, this::leashplayers$drop);
+                holder = leashplayers$holder;
+            }
+        }
+
+        if (holder != null) {
+            if (holder.getWorld() != getWorld()
+                    || holder.getRemovalReason() == RemovalReason.CHANGED_DIMENSION
+                    || getRemovalReason() == RemovalReason.CHANGED_DIMENSION) {
+                leashplayers$onTooLongLeash(holder);
+            } else if (!holder.isAlive() || !isAlive() || !PlayerCollarsMod.isPet(this)) {
+                leashplayers$detach();
+                leashplayers$drop();
+            }
         }
 
         if (leashplayers$proxy != null) {
-            if (leashplayers$proxy.proxyIsRemoved()) {
-                leashplayers$proxy = null;
+            if (leashplayers$proxy.proxyIsRemoved() && holder != null) {
+                leashplayers$refreshLeashProxy();
             }
             else {
-                Entity holderActual = leashplayers$holder;
                 Entity holderTarget = leashplayers$proxy.getLeashHolder();
 
-                if (holderTarget == null && holderActual != null) {
+                if (holderTarget == null && holder != null) {
                     leashplayers$detach();
                     leashplayers$drop();
                 }
-                else if (holderTarget != holderActual) {
+                else if (holderTarget != holder) {
                     leashplayers$attach(holderTarget);
                 }
             }
         }
 
-        leashplayers$apply();
+        if (holder != null) {
+            ActionResult result = PlayerCollarsMod.applyLeashPull(this, holder.getPos(), leashplayers$getLeashPullLength(), leashplayers$getMaxLeashLength());
+            if (result == ActionResult.FAIL) {
+                leashplayers$onTooLongLeash(holder);
+            }
+        }
     }
 
     @Unique
-    private void leashplayers$apply() {
-        Entity holder = leashplayers$holder;
-        if (holder == null) return;
+    private void leashplayers$onTooLongLeash(@NotNull Entity holder) {
+        if (playerCollars$mustTeleportToHolder(holder)) {
+            ServerWorld holderWorld = (ServerWorld) holder.getWorld();
+            World myWorld = getWorld();
 
-        ActionResult result;
-        if (holder.getWorld() != getWorld()) {
-            result = ActionResult.FAIL;
-        } else {
-            result = PlayerCollarsMod.applyLeashPull(this, holder.getPos(), leashplayer$loyalty, leashplayer$loyalty + 6);
-        }
-
-        if (result == ActionResult.FAIL) {
-            if (playerCollars$mustTeleportToHolder(holder)) {
-                teleport((ServerWorld) holder.getWorld(), holder.getX(), holder.getY(), holder.getZ(), Set.of(), holder.getYaw(), getPitch(), true);
-            } else {
-                leashplayers$detach();
-                leashplayers$drop();
+            teleport(holderWorld, holder.getX(), holder.getY(), holder.getZ(), Set.of(), holder.getYaw(), getPitch(), true);
+            if (holderWorld != myWorld) {
+                leashplayers$killLeashProxy();
+                leashplayers$refreshLeashProxy();
             }
+        } else {
+            leashplayers$detach();
+            leashplayers$drop();
         }
     }
 
@@ -137,12 +149,12 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
     private void leashplayers$attach(Entity entity) {
         leashplayer$loyalty = getAttributeValue(PlayerCollarsMod.ATTR_LEASH_DISTANCE);
         leashplayers$holder = entity;
-
-        if (leashplayers$proxy == null) {
-            leashplayers$proxy = new LeashProxyEntity(this);
-            getWorld().spawnEntity(leashplayers$proxy);
+        if (entity instanceof LeashKnotEntity knot) {
+            leashplayers$leashInfo = Either.right(GlobalPos.create(knot.getWorld().getRegistryKey(), knot.getAttachedBlockPos()));
+        } else {
+            leashplayers$leashInfo = Either.left(entity.getUuid());
         }
-        leashplayers$proxy.attachLeash(leashplayers$holder, true);
+        leashplayers$refreshLeashProxy();
 
         if (this.hasVehicle() && !this.getServerWorld().getGameRules().getBoolean(PlayerCollarsMod.LEASHED_PLAYERS_RIDE_ENTITIES)) {
             this.stopRiding();
@@ -152,9 +164,26 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
     }
 
     @Unique
-    private void leashplayers$detach() {
-        leashplayers$holder = null;
+    private void leashplayers$refreshLeashProxy() {
+        if (leashplayers$proxy != null && leashplayers$proxy.isRemoved()) {
+            leashplayers$proxy = null;
+        }
+        if (leashplayers$proxy == null) {
+            leashplayers$proxy = new LeashProxyEntity(this);
+            getWorld().spawnEntity(leashplayers$proxy);
+        }
+        leashplayers$proxy.attachLeash(leashplayers$holder, true);
+    }
 
+    @Unique
+    private void leashplayers$detach() {
+        leashplayers$leashInfo = null;
+        leashplayers$holder = null;
+        leashplayers$killLeashProxy();
+    }
+
+    @Unique
+    private void leashplayers$killLeashProxy() {
         if (leashplayers$proxy != null) {
             if (leashplayers$proxy.isAlive() || !leashplayers$proxy.proxyIsRemoved()) {
                 leashplayers$proxy.proxyRemove();
@@ -194,34 +223,38 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
     public void leashplayers$readCustomDataFromNbt(NbtCompound nbt, CallbackInfo ci) {
         NbtElement leashHolderNbt = nbt.get(playerCollars$LEASH_HOLDER_TAG);
         if (leashHolderNbt != null) {
-            leashplayers$LEASH_HOLDER_CODEC.parse(NbtOps.INSTANCE, leashHolderNbt).ifSuccess(newHolder ->
-                    newHolder.ifLeft(uuid -> {
-                        var oldHolder = getServerWorld().getPlayerByUuid(uuid);
-                        if (isAlive() && oldHolder != null && oldHolder.isAlive()) {
-                            leashplayers$attach(oldHolder);
-                        } else {
-                            leashplayers$drop();
-                        }
-                    }).ifRight(blockPos -> {
-                        if (leashplayers$isLeashableBlock(getServerWorld().getBlockState(blockPos))) {
-                            leashplayers$attachToBlock(blockPos);
-                        } else {
-                            leashplayers$drop();
-                        }
-                    }));
+            leashplayers$LEASH_HOLDER_CODEC.parse(NbtOps.INSTANCE, leashHolderNbt)
+                    .ifSuccess(newHolder -> leashplayers$leashInfo = newHolder);
         }
     }
 
     @Inject(method = "writeCustomDataToNbt(Lnet/minecraft/nbt/NbtCompound;)V", at = @At("TAIL"))
     public void leashplayers$writeCustomDataToNbt(NbtCompound nbt, CallbackInfo ci) {
-        Entity leashHolder = leashplayers$holder;
-        if (leashHolder instanceof LeashKnotEntity knot) {
+        if (leashplayers$leashInfo != null) {
             nbt.put(playerCollars$LEASH_HOLDER_TAG,
-                    leashplayers$LEASH_HOLDER_CODEC.encodeStart(NbtOps.INSTANCE, Either.right(knot.getAttachedBlockPos())).getOrThrow());
-        } else if (leashHolder != null) {
-            nbt.put(playerCollars$LEASH_HOLDER_TAG,
-                    leashplayers$LEASH_HOLDER_CODEC.encodeStart(NbtOps.INSTANCE, Either.left(leashHolder.getUuid())).getOrThrow());
+                    leashplayers$LEASH_HOLDER_CODEC.encodeStart(NbtOps.INSTANCE, leashplayers$leashInfo).getOrThrow());
         }
+    }
+
+    @Unique
+    private void leashplayers$resolveLeashHolder(Either<UUID, GlobalPos> holderInfo, Runnable failureCallback) {
+        holderInfo.ifLeft(uuid -> {
+            var oldHolder = getServerWorld().getPlayerByUuid(uuid);
+            if (isAlive() && oldHolder != null && oldHolder.isAlive()) {
+                leashplayers$attach(oldHolder);
+            } else {
+                failureCallback.run();
+            }
+        }).ifRight(globalPos -> {
+            if (getWorld().getRegistryKey() == globalPos.dimension()) {
+                var blockPos = globalPos.pos();
+                if (leashplayers$isLeashableBlock(getServerWorld().getBlockState(blockPos))) {
+                    leashplayers$attachToBlock(blockPos);
+                } else {
+                    failureCallback.run();
+                }
+            }
+        });
     }
 
     @Override
@@ -250,6 +283,11 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
         }
 
         return ActionResult.PASS;
+    }
+
+    @Unique
+    private double leashplayers$getLeashPullLength() {
+        return leashplayer$loyalty;
     }
 
     @Override
