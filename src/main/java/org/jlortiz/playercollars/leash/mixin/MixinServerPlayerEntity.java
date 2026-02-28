@@ -4,7 +4,9 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.RespawnAnchorBlock;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.decoration.LeashKnotEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -22,6 +24,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.Uuids;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.GlobalPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 import org.jlortiz.playercollars.PlayerCollarsMod;
@@ -35,6 +38,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -118,7 +122,9 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
             ServerWorld holderWorld = (ServerWorld) holder.getWorld();
             World myWorld = getWorld();
 
-            teleport(holderWorld, holder.getX(), holder.getY(), holder.getZ(), Set.of(), holder.getYaw(), getPitch(), true);
+            Vec3d telePos = leashplayers$getTeleportToHolderPos(holder, holderWorld, myWorld);
+
+            teleport(holderWorld, telePos.getX(), telePos.getY(), telePos.getZ(), Set.of(), holder.getYaw(), getPitch(), true);
             if (holderWorld != myWorld) {
                 leashplayers$killLeashProxy();
                 leashplayers$refreshLeashProxy();
@@ -127,6 +133,31 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
             leashplayers$detach();
             leashplayers$drop();
         }
+    }
+
+    @Unique
+    private Vec3d leashplayers$getTeleportToHolderPos(@NotNull Entity holder, ServerWorld holderWorld, World myWorld) {
+        Vec3d desiredPos = holder.getPos();
+        if (holderWorld == myWorld) {
+            // Try to spawn near to owner if we are just somehow pulling too far on the leash
+            Vec3d directionXZ = getPos().subtract(desiredPos);
+            directionXZ = new Vec3d(directionXZ.getX(), desiredPos.getY(), directionXZ.getZ()).normalize();
+            Vec3d nearbyPos = desiredPos.add(directionXZ);
+            var collisions = holderWorld.getBlockCollisions(this, this.getBoundingBox().offset(nearbyPos));
+            if (!collisions.iterator().hasNext()) {
+                return nearbyPos;
+            }
+        }
+
+        // Try to teleport close by like a respawn anchor (seems a little more polite than just appearing inside someone)
+        Optional<Vec3d> x = RespawnAnchorBlock.findRespawnPosition(EntityType.PLAYER, holderWorld, holder.getBlockPos().down());
+        if (x.isPresent()) {
+            Vec3d pos = x.get();
+            if (pos.distanceTo(desiredPos) < leashplayers$getLeashPullLength())
+                return pos;
+        }
+
+        return desiredPos;
     }
 
     @Unique
