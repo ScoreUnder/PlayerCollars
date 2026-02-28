@@ -1,5 +1,6 @@
 package org.jlortiz.playercollars.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import io.wispforest.accessories.api.slot.SlotEntryReference;
 import net.fabricmc.fabric.api.tag.convention.v2.TagUtil;
 import net.minecraft.block.BlockState;
@@ -46,9 +47,8 @@ public abstract class PlayerEntityMixin extends LivingEntity {
         super(entityType, world);
     }
 
-    @Redirect(method = "getBlockBreakingSpeed", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerInventory;getBlockBreakingSpeed(Lnet/minecraft/block/BlockState;)F"), require=0)
-    private float getBlockBreakingSpeed(PlayerInventory instance, BlockState block) {
-        float ret = instance.getBlockBreakingSpeed(block);
+    @ModifyExpressionValue(method = "getBlockBreakingSpeed", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerInventory;getBlockBreakingSpeed(Lnet/minecraft/block/BlockState;)F"))
+    private float getBlockBreakingSpeed(float ret, BlockState block) {
         List<SlotEntryReference> equippedPaws = PlayerCollarsMod.getEquippedAccessories(this, PlayerCollarsMod.PAWS_TAG);
         if (equippedPaws.isEmpty()) return ret;
         for (var paw : equippedPaws) {
@@ -60,9 +60,8 @@ public abstract class PlayerEntityMixin extends LivingEntity {
         return (ret - 1) * 0.125f + 1;
     }
 
-    @Redirect(method="attack", at= @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;getAttributeValue(Lnet/minecraft/registry/entry/RegistryEntry;)D", ordinal=0), require=0)
-    private double getAttributeValue(PlayerEntity instance, RegistryEntry<EntityAttribute> registryEntry) {
-        double ret = instance.getAttributeValue(registryEntry);
+    @ModifyExpressionValue(method = "attack", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerEntity;getAttributeValue(Lnet/minecraft/registry/entry/RegistryEntry;)D", ordinal=0))
+    private double getAttributeValue(double ret) {
         if (PlayerCollarsMod.getEquippedAccessories(this, PlayerCollarsMod.PAWS_TAG).isEmpty()) return ret;
         return (ret - 1) * 0.75f + 1;
     }
