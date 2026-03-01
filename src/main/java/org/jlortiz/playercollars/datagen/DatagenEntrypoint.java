@@ -94,7 +94,6 @@ public class DatagenEntrypoint implements DataGeneratorEntrypoint {
 
             getOrCreateTagBuilder(BlockTags.BEDS).addTag(PlayerCollarsMod.PET_BED_BLOCK_TAG);
             getOrCreateTagBuilder(PlayerCollarsMod.PAWS_ALLOW_INTERACT).addTag(PlayerCollarsMod.PET_BLOCK_TAG);
-            getOrCreateTagBuilder(BlockTags.FENCES).add(PlayerCollarsMod.INVISIBLE_FENCE_BLOCK);
         }
     }
 

@@ -1,11 +1,14 @@
 package org.jlortiz.playercollars.block;
 
+import com.mojang.serialization.MapCodec;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.block.*;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.ai.pathing.NavigationType;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
@@ -33,14 +36,23 @@ import net.minecraft.world.WorldView;
 import net.minecraft.world.tick.ScheduledTickView;
 import org.jlortiz.playercollars.PlayerCollarsMod;
 
-public class InvisibleFenceBlock extends FenceBlock {
+public class InvisibleFenceBlock extends HorizontalConnectingBlock {
+    private static final MapCodec<InvisibleFenceBlock> CODEC = createCodec(InvisibleFenceBlock::new);
+    private static final float FENCE_THICKNESS = 3.25F;  // Thick enough that players can't slip through holes vertically
     public static final RegistryKey<Block> REGISTRY_KEY = RegistryKey.of(RegistryKeys.BLOCK, Identifier.of(PlayerCollarsMod.MOD_ID, "invisible_fence"));
     public static final RegistryKey<Item> ITEM_REGISTRY_KEY = RegistryKey.of(RegistryKeys.ITEM, Identifier.of(PlayerCollarsMod.MOD_ID, "invisible_fence"));
     public static final BooleanProperty POWERED = Properties.POWERED;
 
     public InvisibleFenceBlock(AbstractBlock.Settings settings) {
-        super(settings.registryKey(REGISTRY_KEY));
-        setDefaultState(this.getStateManager().getDefaultState().with(POWERED, false).with(WATERLOGGED, false));
+        super(FENCE_THICKNESS, FENCE_THICKNESS, 16.0F, 16.0F, 24.0F, settings.registryKey(REGISTRY_KEY));
+        setDefaultState(stateManager.getDefaultState().with(NORTH, false).with(EAST, false).with(SOUTH, false).with(WEST, false).with(WATERLOGGED, false).with(POWERED, false));
+    }
+
+    @Override
+    public MapCodec<FenceBlock> getCodec() {
+        // The superclass should return a MapCodec<? extends FenceBlock> but it doesn't...
+        //noinspection unchecked
+        return (MapCodec<FenceBlock>) (MapCodec<?>) CODEC;
     }
 
     @Override
@@ -50,12 +62,18 @@ public class InvisibleFenceBlock extends FenceBlock {
 
     protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
         super.appendProperties(builder);
-        builder.add(POWERED);
+        builder.add(NORTH, EAST, WEST, SOUTH, WATERLOGGED, POWERED);
     }
 
     @Override
     protected BlockState getStateForNeighborUpdate(BlockState state, WorldView world, ScheduledTickView tickView, BlockPos pos, Direction direction, BlockPos neighborPos, BlockState neighborState, Random random) {
-        state = super.getStateForNeighborUpdate(state, world, tickView, pos, direction, neighborPos, neighborState, random);
+        if (state.get(WATERLOGGED)) {
+            tickView.scheduleFluidTick(pos, Fluids.WATER, Fluids.WATER.getTickRate(world));
+        }
+
+        state = direction.getAxis().isHorizontal()
+                ? state.with(FACING_PROPERTIES.get(direction), this.canConnect(neighborState, neighborState.isSideSolidFullSquare(world, neighborPos, direction.getOpposite())))
+                : super.getStateForNeighborUpdate(state, world, tickView, pos, direction, neighborPos, neighborState, random);
         if (neighborState.isOf(this) && neighborState.get(POWERED) != state.get(POWERED)) {
             state = state.with(POWERED, neighborState.get(POWERED));
         }
@@ -69,23 +87,27 @@ public class InvisibleFenceBlock extends FenceBlock {
 
     @Override
     public BlockState getPlacementState(ItemPlacementContext ctx) {
-        BlockState state = super.getPlacementState(ctx);
-        BlockState neighbor = ctx.getWorld().getBlockState(ctx.getBlockPos().north());
-        boolean shouldPower = neighbor.isOf(this) && neighbor.get(POWERED);
-        if (!shouldPower) {
-            neighbor =  ctx.getWorld().getBlockState(ctx.getBlockPos().east());
-            shouldPower = neighbor.isOf(this) && neighbor.get(POWERED);
-        }
-        if (!shouldPower) {
-            neighbor =  ctx.getWorld().getBlockState(ctx.getBlockPos().south());
-            shouldPower = neighbor.isOf(this) && neighbor.get(POWERED);
-        }
-        if (!shouldPower) {
-            neighbor =  ctx.getWorld().getBlockState(ctx.getBlockPos().west());
-            shouldPower = neighbor.isOf(this) && neighbor.get(POWERED);
-        }
-        if (shouldPower) state = state.with(POWERED, true);
+        World world = ctx.getWorld();
+        BlockPos blockPos = ctx.getBlockPos();
+        BlockState state = super.getPlacementState(ctx)
+                .with(NORTH, canConnect(world, blockPos.north(), Direction.SOUTH))
+                .with(EAST, canConnect(world, blockPos.east(), Direction.WEST))
+                .with(SOUTH, canConnect(world, blockPos.south(), Direction.NORTH))
+                .with(WEST, canConnect(world, blockPos.west(), Direction.EAST))
+                .with(WATERLOGGED, world.getFluidState(blockPos).getFluid() == Fluids.WATER);
+
+        if (hasNeighbouringPoweredInvisibleFence(world, blockPos)) state = state.with(POWERED, true);
         return state;
+    }
+
+    private boolean hasNeighbouringPoweredInvisibleFence(World world, BlockPos blockPos) {
+        for (Direction dir : Direction.Type.HORIZONTAL) {
+            BlockState neighbor = world.getBlockState(blockPos.offset(dir));
+            if (neighbor.isOf(this) && neighbor.get(POWERED)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -163,5 +185,18 @@ public class InvisibleFenceBlock extends FenceBlock {
                         : "block.playercollars.invisible_fence.toggle_off")
                 .formatted(Formatting.GREEN), true);
         return ActionResult.SUCCESS;
+    }
+
+    protected boolean canPathfindThrough(BlockState state, NavigationType type) {
+        return false;
+    }
+
+    private boolean canConnect(BlockView world, BlockPos pos, Direction reverseDir) {
+        BlockState blockState = world.getBlockState(pos);
+        return this.canConnect(blockState, blockState.isSideSolidFullSquare(world, pos, reverseDir));
+    }
+
+    private boolean canConnect(BlockState state, boolean neighborIsFullSquare) {
+        return !cannotConnect(state) && neighborIsFullSquare || state.isOf(PlayerCollarsMod.INVISIBLE_FENCE_BLOCK);
     }
 }
