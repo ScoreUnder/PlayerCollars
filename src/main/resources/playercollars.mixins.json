@@ -15,11 +15,11 @@
     "ServerPlayerEntityMixin"
   ],
   "client": [
+    "ClientPlayerEntityMixin",
     "ClientWorldMixin",
     "crawlrendering.BipedEntityModelMixin",
     "crawlrendering.BipedEntityRendererMixin",
     "crawlrendering.BipedEntityRenderStateMixin",
-    "crawlrendering.ClientPlayerEntityMixin",
     "crawlrendering.PlayerEntityRendererMixin"
   ]
 }

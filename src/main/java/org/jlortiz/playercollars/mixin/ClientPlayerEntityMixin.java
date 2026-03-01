@@ -1,4 +1,4 @@
-package org.jlortiz.playercollars.mixin.crawlrendering;
+package org.jlortiz.playercollars.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.mojang.authlib.GameProfile;
@@ -23,6 +23,8 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
     private double getSneakingOrCrawlingSpeed(double original) {
         if (!PlayerCollarsMod.isWalkingOnAllFours(this))
             return original;
-        return PlayerCollarsMod.getFootPawsCrawlingSpeed();
+        var pawFactor = PlayerCollarsMod.getFootPawsCrawlingSpeed();
+        if (isSneaking()) return original * pawFactor;
+        return pawFactor;
     }
 }
