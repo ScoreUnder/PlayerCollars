@@ -253,6 +253,12 @@ public class PlayerCollarsMod implements ModInitializer {
 		}
 
 		rootVehicle.setVelocity(newVelocity);
+		if (newVelocity.getY() >= 0) {
+			rootVehicle.fallDistance = 0;
+		} else if (oldVelocity.getY() < newVelocity.getY()) {
+			// some kind of approximation for how much momentum we removed from the fall
+			rootVehicle.fallDistance *= (float) (newVelocity.getY() * newVelocity.getY() / (oldVelocity.getY() * oldVelocity.getY()));
+		}
 		rootVehicle.velocityDirty = true;
 		return ActionResult.SUCCESS;
 	}
