@@ -1,18 +1,17 @@
 package org.jlortiz.playercollars.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import io.wispforest.accessories.api.slot.SlotEntryReference;
 import net.fabricmc.fabric.api.tag.convention.v2.TagUtil;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.*;
 import net.minecraft.entity.attribute.DefaultAttributeContainer;
-import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.player.PlayerAbilities;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ToolMaterial;
-import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.text.Text;
 import net.minecraft.world.World;
@@ -26,7 +25,6 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -92,6 +90,15 @@ public abstract class PlayerEntityMixin extends LivingEntity {
                 return EntityPose.SWIMMING;
         }
         return entityPose;
+    }
+
+    @ModifyReturnValue(method = "canChangeIntoPose", at = @At("TAIL"))
+    private boolean playerCollars$disallowStandingPoses(boolean poseAllowed, EntityPose pose) {
+        if (!poseAllowed) return false;
+        if (getAbilities().flying) return true;
+        if (pose == EntityPose.STANDING || pose == EntityPose.CROUCHING)
+            return !PlayerCollarsMod.shouldWalkOnAllFours(this);
+        return true;
     }
 
     @Inject(method = "getDisplayName", at = @At("HEAD"), cancellable = true)
