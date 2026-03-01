@@ -237,9 +237,7 @@ public class PlayerCollarsMod implements ModInitializer {
 		Vec3d extraVelocity = vecTo.multiply(pullSpeed / distance);
 		// Don't pull the player off their feet with tiny Y velocities
 		if (rootVehicle.isOnGround() && extraVelocity.getY() < MIN_TUG_Y_VELOCITY) {
-			double tugStrength = extraVelocity.length();
-			if (extraVelocity.getX() == 0 && extraVelocity.getZ() == 0) return ActionResult.PASS;
-			extraVelocity = new Vec3d(extraVelocity.getX(), 0, extraVelocity.getZ()).normalize().multiply(tugStrength);
+			extraVelocity = new Vec3d(extraVelocity.getX(), 0, extraVelocity.getZ());
 		}
 
 		Vec3d oldVelocity = rootVehicle.getVelocity();
