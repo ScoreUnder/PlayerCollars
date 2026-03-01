@@ -5,12 +5,14 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 
-public interface LeashImpl {
+public interface LeashServerSideImpl extends LeashHeldByProxyImpl {
     ActionResult leashplayers$interact(PlayerEntity plr, Hand hand);
-
-    Entity leashplayers$getProxyLeashHolder();
 
     double leashplayers$getLeashPullLength();
 
     double leashplayers$getMaxLeashLength();
+
+    void leashplayers$attach(Entity entity);
+
+    void leashplayers$onLeashTransfer(Entity leashHolder);
 }

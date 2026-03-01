@@ -8,7 +8,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.world.World;
-import org.jlortiz.playercollars.leash.LeashImpl;
+import org.jlortiz.playercollars.leash.LeashServerSideImpl;
 import org.jlortiz.playercollars.leash.LeashProxyEntity;
 import org.jlortiz.playercollars.leash.LeashHeldByProxyImpl;
 import org.spongepowered.asm.mixin.Mixin;
@@ -32,7 +32,7 @@ public abstract class MixinPlayerEntity extends LivingEntity implements LeashHel
     @Inject(method = "interact", at = @At("RETURN"), cancellable = true)
     private void leashplayers$onInteract(Entity entity, Hand hand, CallbackInfoReturnable<ActionResult> info) {
         if (info.getReturnValue() != ActionResult.PASS) return;
-        if (((Object) this) instanceof ServerPlayerEntity player && entity instanceof LeashImpl impl) {
+        if (((Object) this) instanceof ServerPlayerEntity player && entity instanceof LeashServerSideImpl impl) {
             info.setReturnValue(impl.leashplayers$interact(player, hand));
             info.cancel();
         }

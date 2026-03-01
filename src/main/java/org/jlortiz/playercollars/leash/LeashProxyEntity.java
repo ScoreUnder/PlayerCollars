@@ -8,6 +8,7 @@ import net.minecraft.entity.data.TrackedData;
 import net.minecraft.entity.data.TrackedDataHandlerRegistry;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathConstants;
@@ -40,9 +41,6 @@ public final class LeashProxyEntity extends Entity implements Leashable {
         this(LEASH_PROXY_ENTITY_TYPE, target.getWorld());
 
         this.target = target;
-        if (target instanceof LeashHeldByProxyImpl impl) {
-            impl.playerCollars$setLeashProxy(this);
-        }
         setRealLeashTargetId(OptionalInt.of(target.getId()));
 
         proxyUpdate();
@@ -176,6 +174,14 @@ public final class LeashProxyEntity extends Entity implements Leashable {
     @Override
     public void setLeashData(@Nullable Leashable.LeashData leashData) {
         this.leashData = leashData;
+    }
+
+    @Override
+    public void attachLeash(Entity leashHolder, boolean sendPacket) {
+        Leashable.super.attachLeash(leashHolder, sendPacket);
+        if (this.target instanceof LeashServerSideImpl impl) {
+            impl.leashplayers$onLeashTransfer(getLeashHolder());
+        }
     }
 
     private void refreshTarget() {

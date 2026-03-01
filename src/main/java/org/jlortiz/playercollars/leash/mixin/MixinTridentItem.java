@@ -6,7 +6,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.TridentItem;
 import net.minecraft.world.World;
-import org.jlortiz.playercollars.leash.LeashImpl;
+import org.jlortiz.playercollars.leash.LeashHeldByProxyImpl;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -27,7 +27,7 @@ public class MixinTridentItem {
     private void onStoppedUsing(ItemStack stack, World world, LivingEntity user, int remainingUseTicks, CallbackInfoReturnable<Boolean> cir) {
         if (!(user instanceof PlayerEntity player)) return;
 
-        if (player instanceof LeashImpl leash && leash.leashplayers$getProxyLeashHolder() != null) {
+        if (player instanceof LeashHeldByProxyImpl leash && leash.playerCollars$getRealLeashHolder() != null) {
             float f = EnchantmentHelper.getTridentSpinAttackStrength(stack, player);
             if (f > 0.0F) {
                 cir.setReturnValue(false);

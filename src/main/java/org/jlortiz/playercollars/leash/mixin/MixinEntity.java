@@ -14,7 +14,7 @@ import net.minecraft.world.World;
 import org.jlortiz.playercollars.PlayerCollarsMod;
 import org.jlortiz.playercollars.block.InvisibleFenceBlock;
 import org.jlortiz.playercollars.leash.LeashHeldByProxyImpl;
-import org.jlortiz.playercollars.leash.LeashImpl;
+import org.jlortiz.playercollars.leash.LeashServerSideImpl;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -104,8 +104,8 @@ public abstract class MixinEntity {
 
     @Unique
     private boolean playerCollars$isTooFarFromLeashHolder(Entity to) {
-        if (!(this instanceof LeashImpl leash)) return false;
-        Entity leashHolder = leash.leashplayers$getProxyLeashHolder();
+        if (!(this instanceof LeashServerSideImpl leash)) return false;
+        Entity leashHolder = leash.playerCollars$getRealLeashHolder();
         if (leashHolder == null) return false;
 
         float newLeashLen = leashHolder.distanceTo(to);

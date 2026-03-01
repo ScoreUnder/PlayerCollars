@@ -59,7 +59,7 @@ import org.jlortiz.playercollars.block.DogBowlBlock;
 import org.jlortiz.playercollars.block.InvisibleFenceBlock;
 import org.jlortiz.playercollars.event.PawsEventHandler;
 import org.jlortiz.playercollars.item.*;
-import org.jlortiz.playercollars.leash.LeashImpl;
+import org.jlortiz.playercollars.leash.LeashServerSideImpl;
 import org.jlortiz.playercollars.leash.LeashProxyEntity;
 import org.jlortiz.playercollars.leash.LeashServerSideInit;
 import org.jlortiz.playercollars.network.*;
@@ -260,7 +260,7 @@ public class PlayerCollarsMod implements ModInitializer {
 	}
 
 	public static boolean blockLeashKnotBreak(ServerWorld world, PlayerEntity player, LeashKnotEntity entity) {
-		if (entity.equals(((LeashImpl) player).leashplayers$getProxyLeashHolder())) {
+		if (entity.equals(((LeashServerSideImpl) player).playerCollars$getRealLeashHolder())) {
 			player.sendMessage(Text.translatable("message.playercollars.no_break_fence").formatted(Formatting.RED), true);
 			return true;
 		}
@@ -424,7 +424,7 @@ public class PlayerCollarsMod implements ModInitializer {
 		PlayerBlockBreakEvents.BEFORE.register((World var1, PlayerEntity player, BlockPos blockPos, BlockState var4, @Nullable BlockEntity var5) -> {
 			if (var1.isClient) return true;
 			if (player.isSpectator()) return true;
-			Entity leashHolderEntity = ((LeashImpl) player).leashplayers$getProxyLeashHolder();
+			Entity leashHolderEntity = ((LeashServerSideImpl) player).playerCollars$getRealLeashHolder();
 			if (leashHolderEntity instanceof LeashKnotEntity knot && blockPos.equals(knot.getAttachedBlockPos())) {
 				player.sendMessage(Text.translatable("message.playercollars.no_break_fence").formatted(Formatting.RED), true);
 				return false;
