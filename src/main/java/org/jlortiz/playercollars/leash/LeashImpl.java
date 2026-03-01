@@ -10,5 +10,7 @@ public interface LeashImpl {
 
     Entity leashplayers$getProxyLeashHolder();
 
+    double leashplayers$getLeashPullLength();
+
     double leashplayers$getMaxLeashLength();
 }

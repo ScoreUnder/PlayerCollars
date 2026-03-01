@@ -13,6 +13,7 @@
     "MixinLeashKnotEntity",
     "MixinPlayerEntity",
     "MixinServerPlayerEntity",
+    "MixinServerPlayNetworkHandler",
     "MixinTridentItem"
   ],
   "client": [

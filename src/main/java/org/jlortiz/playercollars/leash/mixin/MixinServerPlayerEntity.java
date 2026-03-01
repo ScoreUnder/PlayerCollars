@@ -316,8 +316,8 @@ public abstract class MixinServerPlayerEntity extends PlayerEntity implements Le
         return ActionResult.PASS;
     }
 
-    @Unique
-    private double leashplayers$getLeashPullLength() {
+    @Override
+    public double leashplayers$getLeashPullLength() {
         return leashplayer$loyalty;
     }
 
