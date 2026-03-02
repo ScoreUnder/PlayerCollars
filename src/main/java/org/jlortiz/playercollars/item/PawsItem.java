@@ -1,8 +1,10 @@
 package org.jlortiz.playercollars.item;
 
 import com.mojang.datafixers.util.Either;
+import io.wispforest.accessories.api.slot.SlotEntryReference;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.tooltip.TooltipType;
@@ -12,6 +14,8 @@ import net.minecraft.registry.tag.TagKey;
 import net.minecraft.text.Text;
 import net.minecraft.util.DyeColor;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.BlockView;
 import org.jetbrains.annotations.NotNull;
 import org.jlortiz.playercollars.PlayerCollarsMod;
 import org.jlortiz.playercollars.network.PawsPermissionData;
@@ -33,6 +37,16 @@ public class PawsItem extends FootPawsItem {
             if (entry.map(block::isIn, (y) -> y.equals(key.get()))) return allowed.isDenyList();
         }
         return !allowed.isDenyList();
+    }
+
+    public static boolean canInteractWithPaws(@NotNull LivingEntity player, @NotNull BlockView world, @NotNull BlockPos pos, boolean isBreak) {
+        List<SlotEntryReference> equippedPaws = PlayerCollarsMod.getEquippedAccessories(player, PlayerCollarsMod.PAWS_TAG);
+        if (equippedPaws.isEmpty()) return true;
+        var state = world.getBlockState(pos);
+        for (var paw : equippedPaws) {
+            if (shouldPreventBlockInteraction(paw.stack(), state, isBreak)) return false;
+        }
+        return true;
     }
 
     public static boolean shouldDrop(ItemStack pawsStack, ItemStack thing) {

@@ -12,10 +12,12 @@
     "LivingEntityMixin",
     "NameTagMixin",
     "PlayerEntityMixin",
-    "ServerPlayerEntityMixin"
+    "ServerPlayerEntityMixin",
+    "ServerPlayerInteractionManagerMixin"
   ],
   "client": [
     "ClientPlayerEntityMixin",
+    "ClientPlayerInteractionManagerMixin",
     "ClientWorldMixin",
     "crawlrendering.BipedEntityModelMixin",
     "crawlrendering.BipedEntityRendererMixin",
