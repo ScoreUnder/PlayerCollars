@@ -19,6 +19,7 @@ import static org.jlortiz.playercollars.PlayerCollarsMod.*;
     private static void addPawCrawlingStatus(LivingEntity entity, BipedEntityRenderState state, float tickDelta, ItemModelManager itemModelResolver, CallbackInfo ci) {
         if (!(state instanceof BipedRenderExtensions ext)) return;
 
-        ext.playerCollars$setCrawlingWithPaws(isWalkingOnAllFours(entity));
+        boolean walkingOnAllFours = isWalkingOnAllFours(entity);
+        ext.playerCollars$setCrawlingWithPaws(walkingOnAllFours || ext.playerCollars$isCrawlingWithPaws() && state.leaningPitch != 0);
     }
 }
