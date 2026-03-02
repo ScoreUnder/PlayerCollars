@@ -21,6 +21,7 @@ import org.joml.Vector3f;
 class LeashProxyEntityRenderer extends EntityRenderer<LeashProxyEntity, EntityRenderState> {
     private Class<?> lastProxiedRenderer = null;
     private PlayerEntityRenderState renderState;
+    private PlayerEntityModel model;
 
     public LeashProxyEntityRenderer(EntityRendererFactory.Context c) {
         super(c);
@@ -75,8 +76,10 @@ class LeashProxyEntityRenderer extends EntityRenderer<LeashProxyEntity, EntityRe
         EntityRenderer<?, ?> targetRenderer1 = dispatcher.getRenderer(leashTarget);
         if (!(targetRenderer1 instanceof PlayerEntityRenderer targetRenderer)) return;
 
-        PlayerEntityModel model = targetRenderer.getModel();
-        PlayerEntityRenderState targetState = getOrCreateRenderState(targetRenderer);
+        getTargetRenderState(targetRenderer);
+        PlayerEntityRenderState targetState = this.renderState;
+        PlayerEntityModel model = this.model;
+        if (model == null) return;
         targetRenderer.updateRenderState(player, targetState, tickDelta);
 
         MatrixStack matrices = new MatrixStack();
@@ -95,21 +98,25 @@ class LeashProxyEntityRenderer extends EntityRenderer<LeashProxyEntity, EntityRe
         leashData.startPos = leashAttachmentPoint;
     }
 
-    private PlayerEntityRenderState getOrCreateRenderState(PlayerEntityRenderer targetRenderer) {
+    private void getTargetRenderState(PlayerEntityRenderer targetRenderer) {
         Class<? extends PlayerEntityRenderer> renderClass = targetRenderer.getClass();
-        PlayerEntityRenderState targetState;
         // Caching render state object based on the class that spawned it.
         // On the off-chance someone subclassed the player renderer (and therefore might return a different state than
         // expected), this will ensure we recreate our cached state. That said we should probably have a new leash
         // proxy entity by that point, so this is probably over-cautious.
         // The alternative is to create a new render state every frame, which might be a bit high-turnover for the GC.
-        if (lastProxiedRenderer != renderClass) {
-            lastProxiedRenderer = renderClass;
-            renderState = targetState = targetRenderer.createRenderState();
+        if (lastProxiedRenderer == renderClass) return;
+        lastProxiedRenderer = renderClass;
+
+        renderState = targetRenderer.createRenderState();
+        PlayerEntityModel targetModel = targetRenderer.getModel();
+        if (targetModel.getClass() == PlayerEntityModel.class) {
+            model = new PlayerEntityModel(targetModel.getRootPart(), targetModel.thinArms);
         } else {
-            targetState = renderState;
+            // We can't handle subclasses :(
+            // At least, it would be brittle and probably not worth it.
+            model = null;
         }
-        return targetState;
     }
 
     private static void simulateRender(PlayerEntityRenderer targetRenderer, PlayerEntityRenderState targetState, PlayerEntityModel model, MatrixStack matrices) {
